@@ -17,6 +17,29 @@ def calculate_bandwidth(df):  # , center, n_p):
     d = [1] * len(df)   # Asignado provisionalmente por decisión con mi asesor
     return d
 
+def kapa(M, A, alpha, M0):
+    return A * np.exp(alpha * (M - M0))
+
+def g(t, c, p):
+    if t>0:
+        return (p-1) * c**(p-1) * (t+c)**(-p)
+    else:
+        return 0
+
+def f(x, y, M, d, M0, alpha):
+    gau = (2 * np.pi * d * np.exp(alpha * (M - M0)))**(-1) * np.exp(- (x**2 + y**2) / (2 * d * np.exp(alpha * (M - M0))))
+    return  gau
+
+def fit_conditional_intensity(t, x, y, Ht, u, idx, v, ):
+    main_shocks_intensity = v * u[idx]  # this is the mu estimator
+    other_shocks_intensity = 0
+    for tk in Ht:
+        if tk < t:
+            other_shocks_intensity += kapa(M[k]) * g(t-tk) * f(x-x[k], y-y[k], M[k], d, M0, alpha)
+
+    lamb = main_shocks_intensity + other_shocks_intensity
+
+
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     df = read_csv(earthquakes)
@@ -27,7 +50,6 @@ if __name__ =='__main__':
 
     d = calculate_bandwidth(df)  #, center=(0,0), n_p=n_p)
 
-
     # 2. Set l = 0 and u^{(0)}(x,y) = 1
     u_xy = []
 
@@ -37,13 +59,14 @@ if __name__ =='__main__':
     N=20
     p = []
 
+    # 3. Using the maximum likelihood procedure, fit the conditional
+    #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
+    #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
+    # to the earthquake data.
+
+    fci = fit_conditional_intensity(t, x, y, Ht)
 
 """
-# 3. Using the maximum likelihood procedure, fit the conditional
-#   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
-#                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
-# to the earthquake data.
-
 # 4. Calculate ρj for each j=1,2,...,N
 def calculate_pj():
     pass
