@@ -8,6 +8,7 @@ background rate and the branching structure.
 """
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize
 
 
 def read_csv(file):
@@ -39,6 +40,18 @@ def fit_conditional_intensity(t, x, y, Ht, u, idx, v, ):
 
     lamb = main_shocks_intensity + other_shocks_intensity
 
+    l_lamb = np.log(lamb)
+    x0 = [0]
+    neg_func = -l_lamb
+    result = minimize(neg_func, x0, method='BFGS')
+    return result.x[0]
+
+def calculate_pj():
+    pij = np.array([N])
+    pij = kapa(Mi) * g(tj-ti) * f(xj-xi, yj-yi, Mi) / fci(tj, xj, yj, H_tj)
+    pj = np.sum(pij) 
+    return pj
+
 
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
@@ -66,14 +79,13 @@ if __name__ =='__main__':
 
     fci = fit_conditional_intensity(t, x, y, Ht)
 
+    # 4. Calculate ρj for each j=1,2,...,N
+
+    for j in range(1,N):
+        p[j] = calculate_pj()
+
+
 """
-# 4. Calculate ρj for each j=1,2,...,N
-def calculate_pj():
-    pass
-
-for j in range(1,N):
-    p[j] = calculate_pj()
-
 # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
 
 def calculate_mu():
