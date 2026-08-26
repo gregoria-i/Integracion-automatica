@@ -83,27 +83,27 @@ if __name__ =='__main__':
     #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
     #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
     # to the earthquake data.
+    while condition == True:
+        fci = fit_conditional_intensity(t, x, y, Ht, v=1)
 
-    fci = fit_conditional_intensity(t, x, y, Ht)
+        # 4. Calculate ρj for each j=1,2,...,N
 
-    # 4. Calculate ρj for each j=1,2,...,N
-
-    for j in range(1,N):
-        p[j] = calculate_pj()
+        for j in range(1,N):
+            p[j] = calculate_pj()
 
 
-# 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
-    u_xy[l+1] = calculate_mu_estim()
-"""
+        # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
+            u_xy[l+1] = calculate_mu_estim()
 
-# 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
-# number , then set l = l + 1 and go to step 3. Otherwise, take 
-# v*u^{l+1}(x,y) as the background rate and stop.
-epsilon = 10^-3
-v= 20
-if np.abs(u_xy[l+1]-u_xy[l])>epsilon:
-    l = l+1
-else:
-    v * u_xy[l+1]
-"""
+        # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
+        # number , then set l = l + 1 and go to step 3. Otherwise, take 
+        # v*u^{l+1}(x,y) as the background rate and stop.
+            epsilon = 10**(-3)
+            v= 20
+            if np.abs(u_xy[l+1]-u_xy[l])>epsilon:
+                l = l+1
+
+            else:
+                v * u_xy[l+1]
+                condition = False
 
