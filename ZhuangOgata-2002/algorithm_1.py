@@ -52,6 +52,13 @@ def calculate_pj():
     pj = np.sum(pij) 
     return pj
 
+def calculate_mu_estim(x, y):
+    kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2, y**2) * (2d**2)**(-1))
+    numerador = np.sum((1-pj) * kdj)
+    mu_estim = T**(-1)  * numerador
+
+    return mu_estim
+
 
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
@@ -85,13 +92,9 @@ if __name__ =='__main__':
         p[j] = calculate_pj()
 
 
-"""
 # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
-
-def calculate_mu():
-    pass
-
-u_xy[l+1] = calculate_mu()
+    u_xy[l+1] = calculate_mu_estim()
+"""
 
 # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
 # number , then set l = l + 1 and go to step 3. Otherwise, take 
