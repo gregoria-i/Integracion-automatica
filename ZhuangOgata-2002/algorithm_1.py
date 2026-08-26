@@ -13,37 +13,32 @@ import pandas as pd
 def read_csv(file):
     return pd.read_csv(file)
 
-def calculate_bandwidth(df, center, n_p):
-    "Calculate the np center nearest eartquakes, set its radius"
-    dj = 1   # Asignado provisionalmente por decisión con mi asesor
-    return dj
+def calculate_bandwidth(df):  # , center, n_p):
+    d = [1] * len(df)   # Asignado provisionalmente por decisión con mi asesor
+    return d
 
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     df = read_csv(earthquakes)
-    print(df.head())
 
     # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
     #   for each event (tj, xj, yj, Mj) 
     n_p = 20  # at least np other earthquakes
 
-    d = []
+    d = calculate_bandwidth(df)  #, center=(0,0), n_p=n_p)
 
-    for event in range(len(df)):
-        d_j = calculate_bandwidth(df, event, n_p)
-        d.append(d_j)
 
-    print(d[:5])
+    # 2. Set l = 0 and u^{(0)}(x,y) = 1
+    u_xy = []
+
+    l = 0
+    u_xy[0] = 1
+
+    N=20
+    p = []
+
 
 """
-# 2. Set l = 0 and u^{(0)}(x,y) = 1
-N=20
-p = []
-l = 0
-u_xy = []
-
-u_xy[0] = 1
-
 # 3. Using the maximum likelihood procedure, fit the conditional
 #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
 #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
