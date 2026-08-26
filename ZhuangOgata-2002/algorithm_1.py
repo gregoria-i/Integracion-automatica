@@ -53,7 +53,7 @@ def calculate_pj():
     return pj
 
 def calculate_mu_estim(x, y):
-    kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2, y**2) * (2d**2)**(-1))
+    kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2, y**2) * (2 * d**2)**(-1))
     numerador = np.sum((1-pj) * kdj)
     mu_estim = T**(-1)  * numerador
 
@@ -63,6 +63,12 @@ def calculate_mu_estim(x, y):
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     df = read_csv(earthquakes)
+    M0 = 4.3  # Magnitud de corte
+    df = df[df["Magnitude"]>= M0]
+
+    M = df['Magnitude'].to_numpy()
+    X = df['Longitude'].to_numpy()
+    Y = df['Latitude'].to_numpy()
 
     # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
     #   for each event (tj, xj, yj, Mj) 
@@ -79,6 +85,7 @@ if __name__ =='__main__':
     N=20
     p = []
 
+    convergence_steps = pd.DataFrame(columns = ["log L", "v", "A", "c", "alpha", "p", "d"])
     # 3. Using the maximum likelihood procedure, fit the conditional
     #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
     #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
@@ -107,3 +114,4 @@ if __name__ =='__main__':
                 v * u_xy[l+1]
                 condition = False
 
+    print(convergence_steps)
