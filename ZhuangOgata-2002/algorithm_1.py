@@ -7,19 +7,38 @@ following iterative algorithm that simultaneously estimates the
 background rate and the branching structure.
 """
 import numpy as np
+import pandas as pd
 
-# 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
-#   for each event (tj, xj, yj, Mj) 
-N=20
-n_p = 20
-p = []
-def calculate_bandwidth():
-    pass 
 
-for event_j in range(1, N):
-    dj = calculate_bandwidth(event_j)
+def read_csv(file):
+    return pd.read_csv(file)
 
+def calculate_bandwidth(df, center, n_p):
+    "Calculate the np center nearest eartquakes, set its radius"
+    dj = 1   # Asignado provisionalmente por decisión con mi asesor
+    return dj
+
+if __name__ =='__main__':
+    earthquakes = "Earthquakes.csv"
+    df = read_csv(earthquakes)
+    print(df.head())
+
+    # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
+    #   for each event (tj, xj, yj, Mj) 
+    n_p = 20  # at least np other earthquakes
+
+    d = []
+
+    for event in range(len(df)):
+        d_j = calculate_bandwidth(df, event, n_p)
+        d.append(d_j)
+
+    print(d[:5])
+
+"""
 # 2. Set l = 0 and u^{(0)}(x,y) = 1
+N=20
+p = []
 l = 0
 u_xy = []
 
@@ -53,3 +72,5 @@ if np.abs(u_xy[l+1]-u_xy[l])>epsilon:
     l = l+1
 else:
     v * u_xy[l+1]
+"""
+
