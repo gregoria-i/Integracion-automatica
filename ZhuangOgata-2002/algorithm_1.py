@@ -30,17 +30,13 @@ class ETAS_Declustering:
         self.n_p = 20  # at least np other earthquakes
         d = self.calculate_bandwidth()
 
+        # 2. Set l = 0 and u^{(0)}(x,y) = 1
+        u_xy = np.asarray([], dtype=int)  # Here we have to check if u is an array of int
 
+        self.l = 0  # For iterations
+        u_xy = np.append(u_xy, 1)
         """
 
-        # 2. Set l = 0 and u^{(0)}(x,y) = 1
-        u_xy = np.array()
-
-        l = 0
-        u_xy[0] = 1
-
-        N=20
-        p = []
 
         convergence_steps = pd.DataFrame(columns = ["log L", "v", "A", "c", "alpha", "p", "d"])
         # 3. Using the maximum likelihood procedure, fit the conditional
