@@ -12,21 +12,26 @@ from scipy.optimize import minimize
 
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, d=0.2, epsilon=10**(-3), max_iterations=100):
+    def __init__(self, archivo, M0=4.3, d=0.2, epsilon=10**(-3)):
         self.archivo = archivo
-        self.df = self.read_csv(self.archivo)
         self.M0 = M0
-        self.df = self.df[self.df["Magnitude"]>= M0]
+        self.d = d
+        self.epsilon = epsilon  
 
-        M = self.df['Magnitude'].to_numpy()
-        X = self.df['Longitude'].to_numpy()
-        Y = self.df['Latitude'].to_numpy()
+        # Inicializar
+        self.N = 0
+
+        self.df = self.read_csv(self.archivo)
+
+        self.prepare_data()
 
         # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
         #   for each event (tj, xj, yj, Mj) 
-        n_p = 20  # at least np other earthquakes
+        self.n_p = 20  # at least np other earthquakes
+        d = self.calculate_bandwidth()
 
-        d = self.calculate_bandwidth(self.df)  #, center=(0,0), n_p=n_p)
+
+        """
 
         # 2. Set l = 0 and u^{(0)}(x,y) = 1
         u_xy = np.array()
@@ -66,16 +71,22 @@ class ETAS_Declustering:
                     v * u_xy[l+1]
                     condition = False
 
-        print(convergence_steps)
-
+        print(convergence_steps)"""
 
 
     def read_csv(self, file):
         return pd.read_csv(file)
 
-    def calculate_bandwidth(self, df):  # , center, n_p):
-        d = [1] * len(df)   # Asignado provisionalmente por decisión con mi asesor
-        return d
+    def prepare_data(self):
+        self.df = self.df[self.df['Magnitude']>= self.M0]
+        self.N = len(self.df)
+        self.M = self.df['Magnitude'].to_numpy()
+        self.X = self.df['Longitude'].to_numpy()
+        self.Y = self.df['Latitude'].to_numpy()
+
+    def calculate_bandwidth(self):
+        # self.n_p is involved in the calculation of dj, but I set de degree value as the article
+        self.dj = np.full(self.N, self.d)
 
     def kapa(self, M, A, alpha, M0):
         return A * np.exp(alpha * (M - M0))
@@ -122,4 +133,5 @@ class ETAS_Declustering:
 
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
-    ETAS_Declustering(earthquakes)
+    obj = ETAS_Declustering(earthquakes)
+    print(obj.df)
