@@ -12,7 +12,7 @@ import pandas as pd
 
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, d=0.2, epsilon=10**(-3), max_iter=100):
+    def __init__(self, archivo, M0=4.3, d=0.2, epsilon=10**(-3), max_iter=500):
         self.archivo = archivo
         self.M0 = M0
         self.d = d
@@ -29,7 +29,7 @@ class ETAS_Declustering:
         # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
         #   for each event (tj, xj, yj, Mj) 
         self.n_p = 20  # at least np other earthquakes
-        d = self.calculate_bandwidth()
+        self.calculate_bandwidth()
 
         # 2. Set l = 0 and u^{(0)}(x,y) = 1
         self.u_xy = np.asarray([], dtype=float) 
@@ -38,7 +38,7 @@ class ETAS_Declustering:
         self.u_xy = np.append(self.u_xy, 1)
 
         condition = True
-        while condition == True and self.l < self.max_iter:
+        while condition and self.l < self.max_iter:
             # 3. Using the maximum likelihood procedure, fit the conditional
             #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
             #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
@@ -48,7 +48,8 @@ class ETAS_Declustering:
             # 4. Calculate ρj for each j=1,2,...,N
             temp_pj = np.array([self.N])
             for j in range(0, self.N):
-                temp_pj = np.append(temp_pj, self.calculate_pj(j))
+                pj = self.calculate_pj(j)
+                temp_pj = np.append(temp_pj, pj)
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim(self.X, self.Y, self.d, temp_pj)
@@ -58,9 +59,7 @@ class ETAS_Declustering:
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
             # v*u^{l+1}(x,y) as the background rate and stop.
 
-            self.difference = self.calculate_difference()
-
-            self.temp = {
+            temp = {
                 "iteration": self.l,
                 "log L": self.log_likelihood,
                 "v": self.v,
@@ -69,8 +68,10 @@ class ETAS_Declustering:
                 "alpha": self.alpha,
                 "p": self.p,
                 "d": self.d}
-            self.convergence_df[self.l] = self.temp
+            
+            self.convergence_df.loc[len(self.convergence_df)] = temp
 
+            self.difference = self.calculate_difference()
             if self.difference <= self.epsilon:
                 condition = False
                 break
