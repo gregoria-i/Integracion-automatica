@@ -115,9 +115,11 @@ class ETAS_Declustering:
         else:
             return 0
 
-    def f(self):
-        gau = (2 * np.pi * d * np.exp(alpha * (M - self.M0)))**(-1) * np.exp(- (x**2 + y**2) / (2 * d * np.exp(alpha * (M - self.M0))))
-        return  gau
+    def f(self, x, y, M, d, alpha):
+        magnitude_dif = alpha * (M - self.M0)
+        denominator = 2 * np.pi * d * np.exp(magnitude_dif)
+        numerator =  np.exp(- (x**2 + y**2) / (2 * d * np.exp(magnitude_dif)))
+        return  numerator / denominator
 
     def fit_conditional_intensity(self, t, x, y, Ht, u, idx, v, ):
         main_shocks_intensity = v * u[idx]  # this is the mu estimator
