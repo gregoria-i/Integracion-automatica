@@ -19,7 +19,8 @@ class ETAS_Declustering:
         self.epsilon = epsilon  
         self.N = 0
         self.max_iter = max_iter
-        self.convergence_df = pd.DataFrame(columns = ["log L", "v", "A", "c", "alpha", "p", "d"])
+        self.convergence_df = pd.DataFrame(columns = ["iteration", "log L", "v", "A", "c", "alpha", "p", "d"])
+        self.background_rate = 1
 
         self.df = self.read_csv(self.archivo)
 
@@ -57,9 +58,21 @@ class ETAS_Declustering:
 
             self.difference = self.calculate_difference()
 
+            self.temp = {
+                "iteration": self.l,
+                "log L": self.log_likelihood,
+                "v": self.v,
+                "A": self.A,
+                "c": self.c,
+                "alpha": self.alpha,
+                "p": self.p,
+                "d": self.d}
+            self.convergence_df[l] = self.temp
+
             if self.difference > self.epsilon:
                 condition = False
-
+                break
+            
             l +=1
 
         self.background_rate = self.u_xy[-1]
@@ -119,6 +132,9 @@ class ETAS_Declustering:
         mu_estim = T**(-1)  * numerador
 
         return mu_estim
+
+    def calculate_difference(self):
+        pass
 
 
 
