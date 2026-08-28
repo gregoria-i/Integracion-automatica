@@ -25,7 +25,7 @@ class ETAS_Declustering:
         self.df = self.read_csv(self.archivo)
 
         self.prepare_data()
-        """
+        
         # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
         #   for each event (tj, xj, yj, Mj) 
         self.n_p = 20  # at least np other earthquakes
@@ -46,11 +46,12 @@ class ETAS_Declustering:
             self.fit_conditional_intensity()
 
             # 4. Calculate ρj for each j=1,2,...,N
-            temp_pj = np.array([self.N])
-            for j in range(0, self.N):
-                pj = self.calculate_pj(j)
-                temp_pj = np.append(temp_pj, pj)
+            temp_p = np.zeros([self.N])
 
+            for j in range(self.N):
+                lambda_j = self.calculate_intensity_j(j)
+                temp_p[j] = self.calculate_pj(j, lambda_j)
+            """
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim(self.X, self.Y, self.d, temp_pj)
             self.u_xy = np.append(self.u_xy, mu)
@@ -105,6 +106,7 @@ class ETAS_Declustering:
         ).to_numpy()  # total time from any earthquake to the first earthquake
 
         self.df["Interarrival_T"] = self.df["Arrival_T"].diff().dt.total_seconds()
+        self.T_inter = self.df["Interarrival_T"]
         self.T_total = self.T[-1]  # total time since the first earthquake
 
         self.N = len(self.df)
@@ -138,6 +140,10 @@ class ETAS_Declustering:
         return  numerator / denominator
 
     def fit_conditional_intensity(self):
+        self.A = 1
+        self.c = 1
+        self.alpha = 1
+        self.p = 1
         pass
         """main_shocks_intensity = v * u[idx]  # this is the mu estimator
         other_shocks_intensity = 0
@@ -153,21 +159,34 @@ class ETAS_Declustering:
         result = minimize(neg_func, x0, method='BFGS')
         return result.x[0]"""
 
-    def calculate_pj(self, alpha, j):
+    def calculate_pij(self, i, j, lambda_j):
+        """
+        proba of the jth eartquake being an offspring of ith event
+
+        lambda_j : intensity function for the event j
+                    it has to be calculated before
+        """        
+        Mi = self.M[i]
+        delta_t = self.T[j] - self.T[i]
+        delta_x = self.X[j] - self.X[i]
+        delta_y = self.Y[j] - self.Y[i]
+
+        pij = (self.kappa(Mi, self.A, self.alpha) 
+               * self.g(delta_t, self.c, self.p) 
+               * self.f(delta_x, delta_y, Mi, self.d, self.alpha)
+               ) / lambda_j
+        return pij
+    
+    def calculate_pj(self, j, lambda_j):
         """
         proba of the jth eartquake being an offspring in the process
         """
-        pij = 0
-        for i in range(0, j-2): # from i=1 to j-1 in the article, so I assume that in computer is from i=0 to j-2
-            Mi = self.M[i]
-            di = self.d[i]
-            delta_t = self.T[j]-self.T[i]
-            delta_x = self.X[j]-self.X[i]
-            delta_y = self.Y[j]-self.Y[i]
+        pj = 0
+        for i in range(j):  # from i=1 to j-1 in the article, but range goes from i=0 to j-1
+            pij = self.calculate_pij(i,j, lambda_j)
+            pj += pij
 
-            pij += self.kappa(Mi) * self.g(delta_t) * self.f(delta_x, delta_y, Mi, di, alpha)
-
-        return pij
+        return pj
 
     def calculate_mu_estim(self, x, y, d, p):
         kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2 + y**2) / (2 * d**2))
