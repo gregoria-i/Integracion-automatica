@@ -32,7 +32,7 @@ class ETAS_Declustering:
         d = self.calculate_bandwidth()
 
         # 2. Set l = 0 and u^{(0)}(x,y) = 1
-        self.u_xy = np.asarray([], dtype=int)  # Here we have to check if u is an array of int
+        self.u_xy = np.asarray([], dtype=float) 
 
         self.l = 0  # For iterations
         self.u_xy = np.append(self.u_xy, 1)
@@ -50,7 +50,7 @@ class ETAS_Declustering:
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim()
-            self.u_xy.append(self.u_xy, mu)
+            self.u_xy = np.append(self.u_xy, mu)
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
