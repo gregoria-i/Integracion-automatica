@@ -25,7 +25,7 @@ class ETAS_Declustering:
         self.df = self.read_csv(self.archivo)
 
         self.prepare_data()
-
+        """
         # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
         #   for each event (tj, xj, yj, Mj) 
         self.n_p = 20  # at least np other earthquakes
@@ -76,7 +76,7 @@ class ETAS_Declustering:
             l +=1
 
         self.background_rate = self.u_xy[-1]
-        print(self.convergence_df)
+        print(self.convergence_df)"""
 
     def read_csv(self, file):
         return pd.read_csv(file)
@@ -84,9 +84,23 @@ class ETAS_Declustering:
     def prepare_data(self):
         self.df = self.df[self.df['Magnitude']>= self.M0]
         self.N = len(self.df)
-        self.M = self.df['Magnitude'].to_numpy()
-        self.X = self.df['Longitude'].to_numpy()
-        self.Y = self.df['Latitude'].to_numpy()
+        self.M = self.df['Magnitude']
+        self.X = self.df['Longitude']
+        self.Y = self.df['Latitude']
+
+        # Tiempo
+        self.df["Arrival_T"] = pd.to_datetime({
+            "year": self.df["Year"],
+            "month": self.df["Month"],
+            "day": self.df["Day"],
+            "hour": self.df["Hour"],
+            "minute": self.df["Minute"],
+            "second": self. df["Second"]
+        })
+        self.T = self.df["Arrival_T"]
+
+        self.df["Interarrival_T"] = self.df["Arrival_T"].diff()
+        self.T_total = self.df['Arrival_T'].iloc[-1] - self.df['Arrival_T'].iloc[0]
 
     def calculate_bandwidth(self):
         # self.n_p is involved in the calculation of dj, but I set de degree value as the article
@@ -141,4 +155,3 @@ class ETAS_Declustering:
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     obj = ETAS_Declustering(earthquakes)
-    print(obj.df)
