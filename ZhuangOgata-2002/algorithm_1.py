@@ -8,7 +8,7 @@ background rate and the branching structure.
 """
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
+#from scipy.optimize import minimize
 
 
 class ETAS_Declustering:
@@ -121,8 +121,9 @@ class ETAS_Declustering:
         numerator =  np.exp(- (x**2 + y**2) / (2 * d * np.exp(magnitude_dif)))
         return  numerator / denominator
 
-    def fit_conditional_intensity(self, t, x, y, Ht, u, idx, v, ):
-        main_shocks_intensity = v * u[idx]  # this is the mu estimator
+    def fit_conditional_intensity(self):
+        pass
+        """main_shocks_intensity = v * u[idx]  # this is the mu estimator
         other_shocks_intensity = 0
         for tk in Ht:
             if tk < t:
@@ -134,13 +135,23 @@ class ETAS_Declustering:
         x0 = [0]
         neg_func = -l_lamb
         result = minimize(neg_func, x0, method='BFGS')
-        return result.x[0]
+        return result.x[0]"""
 
-    def calculate_pj(self):
-        pij = np.array([N])
-        pij = self.kappa(Mi) * self.g(tj-ti) * self.f(xj-xi, yj-yi, Mi) / fci(tj, xj, yj, H_tj)
-        pj = np.sum(pij) 
-        return pj
+    def calculate_pj(self, alpha, j):
+        """
+        proba of the jth eartquake being an offspring in the process
+        """
+        pij = 0
+        for i in range(0, j-2): # from i=1 to j-1 in the article, so I assume that in computer is from i=0 to j-2
+            Mi = self.M[i]
+            di = self.d[i]
+            delta_t = self.T[j]-self.T[i]
+            delta_x = self.X[j]-self.X[i]
+            delta_y = self.Y[j]-self.Y[i]
+
+            pij += self.kappa(Mi) * self.g(delta_t) * self.f(delta_x, delta_y, Mi, di, alpha)
+
+        return pij
 
     def calculate_mu_estim(self, x, y):
         kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2 + y**2) * (2 * d**2)**(-1))
