@@ -8,7 +8,7 @@ background rate and the branching structure.
 """
 import numpy as np
 import pandas as pd
-#from scipy.optimize import minimize
+from scipy.optimize import minimize
 
 
 class ETAS_Declustering:
@@ -49,13 +49,12 @@ class ETAS_Declustering:
             temp_p = np.zeros([self.N])
 
             for j in range(self.N):
-                lambda_j = self.calculate_intensity_j(j)
+                lambda_j = self.evaluate_intensity_j(j, v, )
                 temp_p[j] = self.calculate_pj(j, lambda_j)
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim(self.X, self.Y, temp_p)
             self.u_xy = np.append(self.u_xy, mu)
 
-            """
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
             # v*u^{l+1}(x,y) as the background rate and stop.
@@ -81,7 +80,7 @@ class ETAS_Declustering:
 
         self.background_rate = self.u_xy[-1]
         print(self.convergence_df)
-        """
+        
     def read_csv(self, file):
         return pd.read_csv(file)
 
@@ -139,26 +138,66 @@ class ETAS_Declustering:
 
         return  numerator / denominator
 
+    def log_likelihood(self, params):
+        v, A, c, alpha, p = params
+        log_history = 0
+
+        for k in range(self.N):
+            lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p)
+            log_history += np.log(lambda_k)
+
+        # integral of the intensity
+        integral_back = 1
+        integral_offspring = 1
+
+        integral = integral_back + integral_offspring
+
+        l_L_lambda = log_history - integral
+        return l_L_lambda
+
     def fit_conditional_intensity(self):
-        self.A = 1
-        self.c = 1
-        self.alpha = 1
-        self.p = 1
-        pass
-        """main_shocks_intensity = v * u[idx]  # this is the mu estimator
-        other_shocks_intensity = 0
-        for tk in Ht:
-            if tk < t:
-                other_shocks_intensity += self.kapa(M[k]) * g(t-tk) * f(x-x[k], y-y[k], M[k], d, self.M0, alpha)
+        """
+        This function is for estimate the parameters
+        """
+        x0 = [self.v, self.A, self.c, self.alpha, self.p]
 
-        lamb = main_shocks_intensity + other_shocks_intensity
+        result = minimize(lambda params: -self.log_likelihood(params), x0, method="Nelder-Mead")  # We must review other methods
 
-        l_lamb = np.log(lamb)
-        x0 = [0]
-        neg_func = -l_lamb
-        result = minimize(neg_func, x0, method='BFGS')
-        return result.x[0]"""
+        self.v = result.x[0]
+        self.A = result.x[1]
+        self.c = result.x[2]  # segundos
+        self.alpha = result.x[3]
+        self.p = result.x[4]
 
+        self.log_likelihood_value = -result.fun
+
+    def evaluate_intensity_j(self, j, v, A, c, alpha, p):
+        background = v * self.u_xy[j]
+
+        offspring = 0
+
+        for i in range(j):
+
+            Mi = self.M[i]
+
+            delta_t = self.T[j] - self.T[i]
+            delta_x = self.X[j] - self.X[i]
+            delta_y = self.Y[j] - self.Y[i]
+
+            offspring += (
+                self.kappa(Mi, A, alpha)
+                * self.g(delta_t, c, p)
+                * self.f(
+                    delta_x,
+                    delta_y,
+                    Mi,
+                    self.dj[i],
+                    alpha
+                )
+            )
+
+        return background + offspring
+    
     def calculate_pij(self, i, j, lambda_j):
         """
         proba of the jth eartquake being an offspring of ith event
@@ -167,13 +206,14 @@ class ETAS_Declustering:
                     it has to be calculated before
         """        
         Mi = self.M[i]
+        di = self.d_j[i]
         delta_t = self.T[j] - self.T[i]
         delta_x = self.X[j] - self.X[i]
         delta_y = self.Y[j] - self.Y[i]
 
         pij = (self.kappa(Mi, self.A, self.alpha) 
                * self.g(delta_t, self.c, self.p) 
-               * self.f(delta_x, delta_y, Mi, self.d, self.alpha)
+               * self.f(delta_x, delta_y, Mi, di, self.alpha)
                ) / lambda_j
         return pij
     
@@ -202,7 +242,6 @@ class ETAS_Declustering:
 
     def calculate_difference(self):
         return np.max(np.abs(self.u_xy[-1] - self.u_xy[-2]))
-
 
 
 if __name__ =='__main__':
