@@ -120,15 +120,21 @@ class ETAS_Declustering:
         return A * np.exp(alpha * (M - self.M0))
 
     def g(self, t, c, p):
+        """
+        t and c have to be in seconds
+        """
         if t>0:
             return (p-1) * c**(p-1) * (t+c)**(-p)
         else:
             return 0
 
     def f(self, x, y, M, d, alpha):
-        magnitude_dif = alpha * (M - self.M0)
-        denominator = 2 * np.pi * d * np.exp(magnitude_dif)
-        numerator =  np.exp(- (x**2 + y**2) / (2 * d * np.exp(magnitude_dif)))
+        magnitude_factor = np.exp(alpha * (M - self.M0))
+
+        denominator = 2 * np.pi * d * magnitude_factor
+
+        numerator =  np.exp(- (x**2 + y**2) / (2 * d * magnitude_factor))
+
         return  numerator / denominator
 
     def fit_conditional_intensity(self):
