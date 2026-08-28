@@ -162,7 +162,7 @@ class ETAS_Declustering:
         return mu_estim
 
     def calculate_difference(self):
-        pass
+        return np.max(np.abs(self.u_xy[-1] - self.u_xy[-2]))
 
 
 
