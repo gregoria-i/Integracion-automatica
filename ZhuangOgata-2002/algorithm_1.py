@@ -25,7 +25,7 @@ class ETAS_Declustering:
         self.df = self.read_csv(self.archivo)
 
         self.prepare_data()
-        """
+        
         # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
         #   for each event (tj, xj, yj, Mj) 
         self.n_p = 20  # at least np other earthquakes
@@ -67,16 +67,16 @@ class ETAS_Declustering:
                 "alpha": self.alpha,
                 "p": self.p,
                 "d": self.d}
-            self.convergence_df[l] = self.temp
+            self.convergence_df[self.l] = self.temp
 
-            if self.difference > self.epsilon:
+            if self.difference <= self.epsilon:
                 condition = False
                 break
             
-            l +=1
+            self.l +=1
 
         self.background_rate = self.u_xy[-1]
-        print(self.convergence_df)"""
+        print(self.convergence_df)
 
     def read_csv(self, file):
         return pd.read_csv(file)
@@ -106,8 +106,8 @@ class ETAS_Declustering:
         # self.n_p is involved in the calculation of dj, but I set de degree value as the article
         self.dj = np.full(self.N, self.d)
 
-    def kappa(self, M, A, alpha, M0):
-        return A * np.exp(alpha * (M - M0))
+    def kappa(self):
+        return A * np.exp(alpha * (M - self.M0))
 
     def g(self, t, c, p):
         if t>0:
@@ -115,8 +115,8 @@ class ETAS_Declustering:
         else:
             return 0
 
-    def f(self, x, y, M, d, M0, alpha):
-        gau = (2 * np.pi * d * np.exp(alpha * (M - M0)))**(-1) * np.exp(- (x**2 + y**2) / (2 * d * np.exp(alpha * (M - M0))))
+    def f(self):
+        gau = (2 * np.pi * d * np.exp(alpha * (M - self.M0)))**(-1) * np.exp(- (x**2 + y**2) / (2 * d * np.exp(alpha * (M - self.M0))))
         return  gau
 
     def fit_conditional_intensity(self, t, x, y, Ht, u, idx, v, ):
@@ -124,7 +124,7 @@ class ETAS_Declustering:
         other_shocks_intensity = 0
         for tk in Ht:
             if tk < t:
-                other_shocks_intensity += self.kapa(M[k]) * g(t-tk) * f(x-x[k], y-y[k], M[k], d, M0, alpha)
+                other_shocks_intensity += self.kapa(M[k]) * g(t-tk) * f(x-x[k], y-y[k], M[k], d, self.M0, alpha)
 
         lamb = main_shocks_intensity + other_shocks_intensity
 
@@ -155,3 +155,5 @@ class ETAS_Declustering:
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     obj = ETAS_Declustering(earthquakes)
+    print(obj.df.head())
+    print(obj.convergence_df)
