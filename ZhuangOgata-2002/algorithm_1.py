@@ -51,11 +51,11 @@ class ETAS_Declustering:
             for j in range(self.N):
                 lambda_j = self.calculate_intensity_j(j)
                 temp_p[j] = self.calculate_pj(j, lambda_j)
-            """
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
-            mu = self.calculate_mu_estim(self.X, self.Y, self.d, temp_pj)
+            mu = self.calculate_mu_estim(self.X, self.Y, temp_p)
             self.u_xy = np.append(self.u_xy, mu)
 
+            """
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
             # v*u^{l+1}(x,y) as the background rate and stop.
@@ -188,11 +188,17 @@ class ETAS_Declustering:
 
         return pj
 
-    def calculate_mu_estim(self, x, y, d, p):
-        kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2 + y**2) / (2 * d**2))
-        kdj_sum = np.sum((1-p) * kdj)
-        mu_estim = kdj_sum / self.T_total
-        return mu_estim
+    def calculate_mu_estim(self, x, y, p):
+        temp = 0
+
+        for j in range(self.N):
+            delta_x = x - self.X[j]
+            delta_y = y - self.Y[j]
+
+            kdj = (2 * np.pi * self.d)**(-1) * np.exp(-(delta_x**2 + delta_y**2) / (2 * self.d**2))
+            temp += (1-p) * kdj
+
+        return temp / self.T_total
 
     def calculate_difference(self):
         return np.max(np.abs(self.u_xy[-1] - self.u_xy[-2]))
