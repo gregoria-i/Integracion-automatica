@@ -22,6 +22,12 @@ class ETAS_Declustering:
         self.convergence_df = pd.DataFrame(columns = ["iteration", "log L", "v", "A", "c", "alpha", "p", "d"])
         self.background_rate = 1
 
+        self.v = 1
+        self.A = 1
+        self.c = 1
+        self.alpha = 1
+        self.p = 1
+
         self.df = self.read_csv(self.archivo)
 
         self.prepare_data()
