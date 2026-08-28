@@ -51,7 +51,7 @@ class ETAS_Declustering:
                 temp_pj = np.append(temp_pj, self.calculate_pj(j))
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
-            mu = self.calculate_mu_estim()
+            mu = self.calculate_mu_estim(self.X, self.Y, self.d, temp_pj)
             self.u_xy = np.append(self.u_xy, mu)
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
@@ -155,11 +155,10 @@ class ETAS_Declustering:
 
         return pij
 
-    def calculate_mu_estim(self, x, y):
-        kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2 + y**2) * (2 * d**2)**(-1))
-        numerador = np.sum((1-pj) * kdj)
-        mu_estim = T**(-1)  * numerador
-
+    def calculate_mu_estim(self, x, y, d, p):
+        kdj = (2 * np.pi * d)**(-1) * np.exp(-(x**2 + y**2) / (2 * d**2))
+        kdj_sum = np.sum((1-p) * kdj)
+        mu_estim = kdj_sum / self.T_total
         return mu_estim
 
     def calculate_difference(self):
