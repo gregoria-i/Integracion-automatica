@@ -106,7 +106,7 @@ class ETAS_Declustering:
         # self.n_p is involved in the calculation of dj, but I set de degree value as the article
         self.dj = np.full(self.N, self.d)
 
-    def kappa(self):
+    def kappa(self, M, A, alpha):
         return A * np.exp(alpha * (M - self.M0))
 
     def g(self, t, c, p):
