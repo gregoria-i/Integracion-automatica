@@ -20,13 +20,14 @@ class ETAS_Declustering:
         self.N = 0
         self.max_iter = max_iter
         self.convergence_df = pd.DataFrame(columns = ["iteration", "log L", "v", "A", "c", "alpha", "p", "d"])
-        self.background_rate = 1
 
         self.v = 1
-        self.A = 1
-        self.c = 1
-        self.alpha = 1
-        self.p = 1
+        self.A = 0.365
+        self.c = 0.002
+        self.alpha = 1.03
+        self.p = 1.029
+
+        print("Se carga y prepara la info")
 
         self.df = self.read_csv(self.archivo)
 
@@ -35,31 +36,40 @@ class ETAS_Declustering:
         # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
         #   for each event (tj, xj, yj, Mj) 
         self.n_p = 20  # at least np other earthquakes
+
         self.calculate_bandwidth()
+        print("Se ajusta dj. En este caso se tomó d=0.2 en todo el arreglo")
 
         # 2. Set l = 0 and u^{(0)}(x,y) = 1
-        self.u_xy = np.asarray([], dtype=float) 
+        print("Se inicializa u y l para iterar")
+        self.u_xy = np.ones(self.N)  # for each one of the earthquakes
+        self.u_xy_new = np.ones(self.N)  # with the same size 
 
         self.l = 0  # For iterations
-        self.u_xy = np.append(self.u_xy, 1)
+        #self.u_xy = np.append(self.u_xy, 1)
 
         condition = True
         while condition and self.l < self.max_iter:
+            print("C.WHILE sí está iterando")
             # 3. Using the maximum likelihood procedure, fit the conditional
             #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
             #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
             # to the earthquake data.
             self.fit_conditional_intensity()
+            print("Se maximizó la función de verosimilitud para obtener los parámetros")
 
             # 4. Calculate ρj for each j=1,2,...,N
             temp_p = np.zeros([self.N])
 
+            print("Para cada j se obtiene lambda(params) y se obtiene la proba de que el evento j provenga del evento i")
             for j in range(self.N):
-                lambda_j = self.evaluate_intensity_j(j, v, )
+                lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p)
                 temp_p[j] = self.calculate_pj(j, lambda_j)
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim(self.X, self.Y, temp_p)
-            self.u_xy = np.append(self.u_xy, mu)
+
+            self.u_xy_new = mu
+            #self.u_xy = np.append(self.u_xy, mu)
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
@@ -67,7 +77,7 @@ class ETAS_Declustering:
 
             temp = {
                 "iteration": self.l,
-                "log L": self.log_likelihood,
+                "log L": self.log_likelihood_value,
                 "v": self.v,
                 "A": self.A,
                 "c": self.c,
@@ -76,6 +86,7 @@ class ETAS_Declustering:
                 "d": self.d}
             
             self.convergence_df.loc[len(self.convergence_df)] = temp
+            print(self.convergence_df)
 
             self.difference = self.calculate_difference()
             if self.difference <= self.epsilon:
@@ -83,8 +94,8 @@ class ETAS_Declustering:
                 break
             
             self.l +=1
+            self.u_xy = self.u_xy_new.copy()
 
-        self.background_rate = self.u_xy[-1]
         print(self.convergence_df)
         
     def read_csv(self, file):
@@ -107,10 +118,10 @@ class ETAS_Declustering:
 
         self.T = (
             (self.df["Arrival_T"] - self.df["Arrival_T"].iloc[0])
-            .dt.total_seconds()
+            .dt.total_seconds()/ 86400 # days
         ).to_numpy()  # total time from any earthquake to the first earthquake
 
-        self.df["Interarrival_T"] = self.df["Arrival_T"].diff().dt.total_seconds()
+        self.df["Interarrival_T"] = self.df["Arrival_T"].diff().dt.total_seconds() / 86400
         self.T_inter = self.df["Interarrival_T"]
         self.T_total = self.T[-1]  # total time since the first earthquake
 
@@ -128,7 +139,7 @@ class ETAS_Declustering:
 
     def g(self, t, c, p):
         """
-        t and c have to be in seconds
+        t and c have to be in days
         """
         if t>0:
             return (p-1) * c**(p-1) * (t+c)**(-p)
@@ -153,8 +164,31 @@ class ETAS_Declustering:
             log_history += np.log(lambda_k)
 
         # integral of the intensity
-        integral_back = 1
-        integral_offspring = 1
+        integral_back = v * self.T_total
+
+        # Offspring
+        integral_offspring = 0.0
+
+        for i in range(self.N):
+
+            Mi = self.M[i]
+
+            # Time available after event i
+            T_remaining = self.T_total - self.T[i]
+
+            # Integral of g(t - ti) from ti to T
+            integral_g = (
+                1
+                - (
+                    self.c
+                    / (T_remaining + self.c)
+                ) ** (self.p - 1)
+            )
+
+            integral_offspring += (
+                self.kappa(Mi, self.A, self.alpha)
+                * integral_g
+            )
 
         integral = integral_back + integral_offspring
 
@@ -167,13 +201,16 @@ class ETAS_Declustering:
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p]
 
-        result = minimize(lambda params: -self.log_likelihood(params), x0, method="Nelder-Mead")  # We must review other methods
-
+        result = minimize(lambda params: -self.log_likelihood(params), x0, method="L-BFGS-B")  # We must review other methods like L-BFGS-B and define bounds
         self.v = result.x[0]
         self.A = result.x[1]
         self.c = result.x[2]  # segundos
         self.alpha = result.x[3]
         self.p = result.x[4]
+
+        print(result.success)
+        print(result.message)
+        print(result.x)
 
         self.log_likelihood_value = -result.fun
 
@@ -185,7 +222,6 @@ class ETAS_Declustering:
         for i in range(j):
 
             Mi = self.M[i]
-
             delta_t = self.T[j] - self.T[i]
             delta_x = self.X[j] - self.X[i]
             delta_y = self.Y[j] - self.Y[i]
@@ -212,7 +248,7 @@ class ETAS_Declustering:
                     it has to be calculated before
         """        
         Mi = self.M[i]
-        di = self.d_j[i]
+        di = self.dj[i]
         delta_t = self.T[j] - self.T[i]
         delta_x = self.X[j] - self.X[i]
         delta_y = self.Y[j] - self.Y[i]
@@ -247,7 +283,7 @@ class ETAS_Declustering:
         return temp / self.T_total
 
     def calculate_difference(self):
-        return np.max(np.abs(self.u_xy[-1] - self.u_xy[-2]))
+        return np.max(np.abs(self.u_xy_new - self.u_xy))
 
 
 if __name__ =='__main__':
