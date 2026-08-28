@@ -46,7 +46,9 @@ class ETAS_Declustering:
             self.fit_conditional_intensity()
 
             # 4. Calculate ρj for each j=1,2,...,N
-            self.calculate_pj()
+            temp_pj = np.array([self.N])
+            for j in range(0, self.N):
+                temp_pj = np.append(temp_pj, self.calculate_pj(j))
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim()
