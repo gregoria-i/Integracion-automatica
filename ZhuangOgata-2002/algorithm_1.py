@@ -12,7 +12,7 @@ from scipy.optimize import minimize
 
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, d=0.2, epsilon=10**(-3), max_iter=500):
+    def __init__(self, archivo, M0=4.3, d=0.02, epsilon=10**(-3), max_iter=20):
         self.archivo = archivo
         self.M0 = M0
         self.d = d
@@ -22,10 +22,10 @@ class ETAS_Declustering:
         self.convergence_df = pd.DataFrame(columns = ["iteration", "log L", "v", "A", "c", "alpha", "p", "d"])
 
         self.v = 1
-        self.A = 0.365
+        self.A = 0.5
         self.c = 0.002
-        self.alpha = 1.03
-        self.p = 1.029
+        self.alpha = 1
+        self.p = 1
 
         self.df = self.read_csv(self.archivo)
 
@@ -42,7 +42,6 @@ class ETAS_Declustering:
         self.u_xy_new = np.ones(self.N)  # with the same size 
 
         self.l = 0  # For iterations
-        #self.u_xy = np.append(self.u_xy, 1)
 
         condition = True
         while condition and self.l < self.max_iter:
@@ -62,7 +61,6 @@ class ETAS_Declustering:
             mu = self.calculate_mu_estim(self.X, self.Y, temp_p)
 
             self.u_xy_new = mu
-            #self.u_xy = np.append(self.u_xy, mu)
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
@@ -97,7 +95,7 @@ class ETAS_Declustering:
     def prepare_data(self):
         self.df = self.df[self.df['Magnitude']>= self.M0].copy()
 
-        # Tiempo
+        # Time
         self.df["Arrival_T"] = pd.to_datetime({
             "year": self.df["Year"],
             "month": self.df["Month"],
@@ -124,7 +122,9 @@ class ETAS_Declustering:
         self.Y = self.df['Latitude']
 
     def calculate_bandwidth(self):
-        # self.n_p is involved in the calculation of dj, but I set de degree value as the article
+        """
+        self.n_p is involved in the calculation of dj, but I set de degree value as the article
+        """
         self.dj = np.full(self.N, self.d)
 
     def kappa(self, M, A, alpha):
@@ -156,27 +156,23 @@ class ETAS_Declustering:
             lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p)
             log_history += np.log(lambda_k)
 
-        # integral of the intensity
-        integral_back = v * self.T_total
+        integral_back = v * self.T_total  # integral of the intensity
 
-        # Offspring
-        integral_offspring = 0.0
+        integral_offspring = 0.0  # Offspring
 
         for i in range(self.N):
 
             Mi = self.M[i]
 
-            # Time available after event i
-            T_remaining = self.T_total - self.T[i]
+            T_remaining = self.T_total - self.T[i]  # Time available after event i
 
-            # Integral of g(t - ti) from ti to T
             integral_g = (
                 1
                 - (
                     self.c
                     / (T_remaining + self.c)
                 ) ** (self.p - 1)
-            )
+            ) # Integral of g(t - ti) from ti to T
 
             integral_offspring += (
                 self.kappa(Mi, self.A, self.alpha)
