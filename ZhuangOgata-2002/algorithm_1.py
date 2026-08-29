@@ -185,18 +185,12 @@ class ETAS_Declustering:
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p]
         neg = -self.log_likelihood(x0)
-        result = minimize(neg, x0, method="L-BFGS-B")  # We must review other methods like L-BFGS-B and define bounds
+        result = minimize(neg, x0, method="L-BFGS-B")  # We must review other methods and define bounds
         self.v = result.x[0]
         self.A = result.x[1]
-        self.c = result.x[2]  # segundos
+        self.c = result.x[2]  # days
         self.alpha = result.x[3]
         self.p = result.x[4]
-
-        print(result.success)
-        print(result.message)
-        print(result.x)
-
-        self.log_likelihood_value = -result.fun
 
     def evaluate_intensity_j(self, j, v, A, c, alpha, p):
         background = v * self.u_xy[j]
