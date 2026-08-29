@@ -31,5 +31,4 @@ de ejecución en lugar de debuggear correctamente, pero es corregido en este mis
 
 Además es importante mencionar que no estoy haciendo uso de herramientas de Inteligencia Artificial
 para la creación de este código, sólo sigue estándares de los que no conozco el nombre, pero que aprendí
-gracias y desafortunadamente por la explotación laboral. Mientras sigo avanzando, recen conmigo
-para que mi asesor no me piense deshonesta y no me abandone.
+gracias y desafortunadamente por la explotación laboral. 
