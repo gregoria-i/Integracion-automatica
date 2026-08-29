@@ -9,6 +9,7 @@ background rate and the branching structure.
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
+from decimal import Decimal, getcontext  # To avoid overflow in multiplication
 
 
 class ETAS_Declustering:
@@ -153,15 +154,12 @@ class ETAS_Declustering:
         """
         the internal functions are evaluated with params, not with the global variables
         """
-
         v, A, c, alpha, p = params
         log_history = 0
 
         for k in range(self.N):
             lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p)
-            history *= lambda_k
-
-        log_history = np.log(history)  # logₐ(x) + logₐ(y) = logₐ(x·y).
+            log_history += np.log(lambda_k)
 
         integral_back = v * self.T_total  # integral of the intensity
 
@@ -196,7 +194,10 @@ class ETAS_Declustering:
         self.p = result.x[4]
 
     def evaluate_intensity_j(self, j, v, A, c, alpha, p):
-        background = v * self.u_xy[j]
+        """
+        this function has to return lambda()> 0
+        """
+        background = v * self.u_xy[j]  # this are returning 1 all the time
 
         offspring = 0
 
@@ -210,16 +211,12 @@ class ETAS_Declustering:
             offspring += (
                 self.kappa(Mi, A, alpha)
                 * self.g(delta_t, c, p)
-                * self.f(
-                    delta_x,
-                    delta_y,
-                    Mi,
-                    self.dj[i],
-                    alpha
-                )
-            )
+                * self.f(delta_x, delta_y, Mi, self.dj[i], alpha))  # this changes across the time, and sometimes is <0
 
-        return background + offspring
+        result = background + offspring
+        if result <= 0:
+            print(str(background), "-----", str(offspring))
+        return result
     
     def calculate_pij(self, i, j, lambda_j):
         """
