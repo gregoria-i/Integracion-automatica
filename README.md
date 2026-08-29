@@ -24,6 +24,9 @@ Son 3 algoritmos:
 
 Está redactado en inglés para hacerlo coincidir con el texto del artículo**
 
+El archivo __map_of_Mexico.py__ sirve para ver los resultados del algoritmo 1 y que sean revisados por mi asesor.
+
+
 ## Aclaración
 
 En mi último commit _Primera revisión con Dr.Isaías. No converge como en el artículo, pero ya desarrolla el algoritmo_ sí agregué comentarios en español para verificar el proceso
@@ -31,4 +34,7 @@ de ejecución en lugar de debuggear correctamente, pero es corregido en este mis
 
 Además es importante mencionar que no estoy haciendo uso de herramientas de Inteligencia Artificial
 para la creación de este código, sólo sigue estándares de los que no conozco el nombre, pero que aprendí
-gracias y desafortunadamente por la explotación laboral. 
+gracias y desafortunadamente por la explotación laboral.
+
+A mediano plazo, planeo cambiar esta documentación en inglés para la presentación de este para un público
+más amplio y para mi práctica personal.
