@@ -57,6 +57,7 @@ class ETAS_Declustering:
             for j in range(self.N):
                 lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p)
                 temp_p[j] = self.calculate_pj(j, lambda_j)
+
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim(self.X, self.Y, temp_p)
 
@@ -158,7 +159,9 @@ class ETAS_Declustering:
 
         for k in range(self.N):
             lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p)
-            log_history += np.log(lambda_k)
+            history *= lambda_k
+
+        log_history = np.log(history)  # logₐ(x) + logₐ(y) = logₐ(x·y).
 
         integral_back = v * self.T_total  # integral of the intensity
 
@@ -181,7 +184,7 @@ class ETAS_Declustering:
 
     def fit_conditional_intensity(self):
         """
-        This function is for estimate the parameters
+        This function is for estimate the parameters and updates the global parameters
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p]
         neg = -self.log_likelihood(x0)
