@@ -27,8 +27,6 @@ class ETAS_Declustering:
         self.alpha = 1.03
         self.p = 1.029
 
-        print("Se carga y prepara la info")
-
         self.df = self.read_csv(self.archivo)
 
         self.prepare_data()
@@ -38,10 +36,8 @@ class ETAS_Declustering:
         self.n_p = 20  # at least np other earthquakes
 
         self.calculate_bandwidth()
-        print("Se ajusta dj. En este caso se tomó d=0.2 en todo el arreglo")
 
         # 2. Set l = 0 and u^{(0)}(x,y) = 1
-        print("Se inicializa u y l para iterar")
         self.u_xy = np.ones(self.N)  # for each one of the earthquakes
         self.u_xy_new = np.ones(self.N)  # with the same size 
 
@@ -50,18 +46,15 @@ class ETAS_Declustering:
 
         condition = True
         while condition and self.l < self.max_iter:
-            print("C.WHILE sí está iterando")
             # 3. Using the maximum likelihood procedure, fit the conditional
             #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
             #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
             # to the earthquake data.
             self.fit_conditional_intensity()
-            print("Se maximizó la función de verosimilitud para obtener los parámetros")
 
             # 4. Calculate ρj for each j=1,2,...,N
             temp_p = np.zeros([self.N])
 
-            print("Para cada j se obtiene lambda(params) y se obtiene la proba de que el evento j provenga del evento i")
             for j in range(self.N):
                 lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p)
                 temp_p[j] = self.calculate_pj(j, lambda_j)
