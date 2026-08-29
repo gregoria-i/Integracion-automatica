@@ -24,8 +24,8 @@ class ETAS_Declustering:
         self.v = 1
         self.A = 0.5
         self.c = 0.002
-        self.alpha = 1
-        self.p = 1
+        self.alpha = 0.5
+        self.p = 0.5
 
         self.df = self.read_csv(self.archivo)
 
@@ -149,6 +149,10 @@ class ETAS_Declustering:
         return  numerator / denominator
 
     def log_likelihood(self, params):
+        """
+        the internal functions are evaluated with params, not with the global variables
+        """
+
         v, A, c, alpha, p = params
         log_history = 0
 
@@ -166,18 +170,9 @@ class ETAS_Declustering:
 
             T_remaining = self.T_total - self.T[i]  # Time available after event i
 
-            integral_g = (
-                1
-                - (
-                    self.c
-                    / (T_remaining + self.c)
-                ) ** (self.p - 1)
-            ) # Integral of g(t - ti) from ti to T
+            integral_g = (1 - (c / (T_remaining + c)) ** (p - 1)) # Integral of g(t - ti) from ti to T
 
-            integral_offspring += (
-                self.kappa(Mi, self.A, self.alpha)
-                * integral_g
-            )
+            integral_offspring += (self.kappa(Mi, A, alpha)* integral_g)
 
         integral = integral_back + integral_offspring
 
@@ -189,8 +184,8 @@ class ETAS_Declustering:
         This function is for estimate the parameters
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p]
-
-        result = minimize(lambda params: -self.log_likelihood(params), x0, method="L-BFGS-B")  # We must review other methods like L-BFGS-B and define bounds
+        neg = -self.log_likelihood(x0)
+        result = minimize(neg, x0, method="L-BFGS-B")  # We must review other methods like L-BFGS-B and define bounds
         self.v = result.x[0]
         self.A = result.x[1]
         self.c = result.x[2]  # segundos
@@ -280,3 +275,5 @@ if __name__ =='__main__':
     obj = ETAS_Declustering(earthquakes)
     print(obj.df.head())
     print(obj.convergence_df)
+    print(obj.u_xy)
+    print(type(obj.u_xy))
