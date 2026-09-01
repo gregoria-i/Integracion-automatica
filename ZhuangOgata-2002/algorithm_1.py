@@ -24,9 +24,9 @@ class ETAS_Declustering:
 
         self.v = 1
         self.A = 0.5
-        self.c = 0.002
+        self.c = 0.5
         self.alpha = 0.5
-        self.p = 0.5
+        self.p = 1.5
 
         self.df = self.read_csv(self.archivo)
 
@@ -88,8 +88,6 @@ class ETAS_Declustering:
             
             self.l +=1
             self.u_xy = self.u_xy_new.copy()
-
-        print(self.convergence_df)
         
     def read_csv(self, file):
         return pd.read_csv(file)
@@ -136,8 +134,8 @@ class ETAS_Declustering:
         """
         t and c have to be in days
         """
-        if t>0:
-            return (p-1) * c**(p-1) * (t+c)**(-p)
+        if (t>0 and p >= 1 and c>0):
+            return (p-1) * c**(p-1) / (t+c)**(p)
         else:
             return 0
 
@@ -161,6 +159,8 @@ class ETAS_Declustering:
             lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p)
             log_history += np.log(lambda_k)
 
+        print("Log history", str(log_history))
+
         integral_back = v * self.T_total  # integral of the intensity
 
         integral_offspring = 0.0  # Offspring
@@ -174,6 +174,7 @@ class ETAS_Declustering:
             integral_g = (1 - (c / (T_remaining + c)) ** (p - 1)) # Integral of g(t - ti) from ti to T
 
             integral_offspring += (self.kappa(Mi, A, alpha)* integral_g)
+
 
         integral = integral_back + integral_offspring
 
@@ -208,14 +209,15 @@ class ETAS_Declustering:
             delta_x = self.X[j] - self.X[i]
             delta_y = self.Y[j] - self.Y[i]
 
-            offspring += (
-                self.kappa(Mi, A, alpha)
-                * self.g(delta_t, c, p)
-                * self.f(delta_x, delta_y, Mi, self.dj[i], alpha))  # this changes across the time, and sometimes is <0
+            k_evaluated = self.kappa(Mi, A, alpha)
+            g_evaluated = self.g(delta_t, c, p)  # <0
+            f_evaluated = self.f(delta_x, delta_y, Mi, self.dj[i], alpha)  # sometimes =0
+
+            offspring += k_evaluated * g_evaluated * f_evaluated  
 
         result = background + offspring
         if result <= 0:
-            print(str(background), "-----", str(offspring))
+            print(str(k_evaluated), ".....", str(g_evaluated), ".....", str(f_evaluated))
         return result
     
     def calculate_pij(self, i, j, lambda_j):
