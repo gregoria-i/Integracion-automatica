@@ -13,7 +13,7 @@ from decimal import Decimal, getcontext  # To avoid overflow in multiplication
 
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, d=0.02, epsilon=10**(-3), max_iter=20):
+    def __init__(self, archivo, M0=7, d=0.02, epsilon=10**(-3), max_iter=20):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
         self.d = d
@@ -56,12 +56,12 @@ class ETAS_Declustering:
             temp_p = np.zeros([self.N])
 
             for j in range(self.N):
-                lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p)
-                temp_p[j] = self.calculate_pj(j, lambda_j)
+                print(f"j:{j}, v:{self.v}, A:{self.A}, c:{self.c}, alpha:{self.alpha}, p:{self.p}")
+                lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p)  # lambdaj has to be >0
+                temp_p[j] = self.calculate_pj(j, lambda_j)  # We have N lambdaj
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             mu = self.calculate_mu_estim(self.X, self.Y, temp_p)
-
             self.u_xy_new = mu
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
@@ -70,7 +70,7 @@ class ETAS_Declustering:
 
             temp = {
                 "iteration": self.l,
-                "log L": self.log_likelihood_value,
+                "log L": self.log_likelihood,
                 "v": self.v,
                 "A": self.A,
                 "c": self.c,
@@ -79,7 +79,6 @@ class ETAS_Declustering:
                 "d": self.d}
             
             self.convergence_df.loc[len(self.convergence_df)] = temp
-            print(self.convergence_df)
 
             self.difference = self.calculate_difference()
             if self.difference <= self.epsilon:
@@ -127,26 +126,31 @@ class ETAS_Declustering:
         """
         self.dj = np.full(self.N, self.d)
 
-    def kappa(self, M, A, alpha):
-        return A * np.exp(alpha * (M - self.M0))
-
-    def g(self, t, c, p):
+    def fit_conditional_intensity(self):
         """
-        t and c have to be in days
+        This function is for estimate the parameters and updates the global parameters
         """
-        if (t>0 and p >= 1 and c>0):
-            return (p-1) * c**(p-1) / (t+c)**(p)
-        else:
-            return 0
+        x0 = [self.v, self.A, self.c, self.alpha, self.p]
 
-    def f(self, x, y, M, d, alpha):
-        magnitude_factor = np.exp(alpha * (M - self.M0))
+        epsilon = 10**(-4)
+        bounds = [
+            (None, None),  # v
+            (0 + epsilon, 1),  # A
+            (0 + epsilon, None),  # c
+            (None, None),  # alpha
+            (1 + epsilon, None),  # p
+        ]
 
-        denominator = 2 * np.pi * d * magnitude_factor
+        def neg(x0):
+            return -self.log_likelihood(x0)
 
-        numerator =  np.exp(- (x**2 + y**2) / (2 * d * magnitude_factor))
+        result = minimize(neg, x0, method="L-BFGS-B", bounds=bounds)
 
-        return  numerator / denominator
+        self.v = result.x[0]
+        self.A = result.x[1]
+        self.c = result.x[2]  # days
+        self.alpha = result.x[3]
+        self.p = result.x[4]
 
     def log_likelihood(self, params):
         """
@@ -158,8 +162,6 @@ class ETAS_Declustering:
         for k in range(self.N):
             lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p)
             log_history += np.log(lambda_k)
-
-        print("Log history", str(log_history))
 
         integral_back = v * self.T_total  # integral of the intensity
 
@@ -178,27 +180,14 @@ class ETAS_Declustering:
 
         integral = integral_back + integral_offspring
 
-        l_L_lambda = log_history - integral
+        l_L_lambda = log_history - integral  # l_L_lambda its a numpy.float64
         return l_L_lambda
-
-    def fit_conditional_intensity(self):
-        """
-        This function is for estimate the parameters and updates the global parameters
-        """
-        x0 = [self.v, self.A, self.c, self.alpha, self.p]
-        neg = -self.log_likelihood(x0)
-        result = minimize(neg, x0, method="L-BFGS-B")  # We must review other methods and define bounds
-        self.v = result.x[0]
-        self.A = result.x[1]
-        self.c = result.x[2]  # days
-        self.alpha = result.x[3]
-        self.p = result.x[4]
 
     def evaluate_intensity_j(self, j, v, A, c, alpha, p):
         """
         this function has to return lambda()> 0
         """
-        background = v * self.u_xy[j]  # this are returning 1 all the time
+        background = v * self.u_xy[j]
 
         offspring = 0
 
@@ -210,15 +199,34 @@ class ETAS_Declustering:
             delta_y = self.Y[j] - self.Y[i]
 
             k_evaluated = self.kappa(Mi, A, alpha)
-            g_evaluated = self.g(delta_t, c, p)  # <0
+            g_evaluated = self.g(delta_t, c, p)  # >0
             f_evaluated = self.f(delta_x, delta_y, Mi, self.dj[i], alpha)  # sometimes =0
 
             offspring += k_evaluated * g_evaluated * f_evaluated  
 
         result = background + offspring
-        if result <= 0:
-            print(str(k_evaluated), ".....", str(g_evaluated), ".....", str(f_evaluated))
         return result
+
+    def kappa(self, M, A, alpha):
+        return A * np.exp(alpha * (M - self.M0))
+
+    def g(self, t, c, p):
+        """
+        t and c have to be in days
+        """
+        if (t>0 and p >= 1 and c>0):
+            return (p-1) * c**(p-1) / (t+c)**(p)
+        else:
+            return 0
+
+    def f(self, x, y, M, d, alpha):
+        magnitude_factor = np.exp(alpha * (M - self.M0))  # >0
+
+        denominator = 2 * np.pi * d * magnitude_factor  # >0
+
+        numerator =  np.exp(- (x**2 + y**2) / (2 * d * magnitude_factor))  # >0
+
+        return  numerator / denominator
     
     def calculate_pij(self, i, j, lambda_j):
         """
@@ -269,7 +277,7 @@ class ETAS_Declustering:
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     obj = ETAS_Declustering(earthquakes)
-    print(obj.df.head())
-    print(obj.convergence_df)
-    print(obj.u_xy)
-    print(type(obj.u_xy))
+    # print(obj.df.head())
+    # print(obj.convergence_df)
+    # print(obj.u_xy)
+    # print(type(obj.u_xy))
