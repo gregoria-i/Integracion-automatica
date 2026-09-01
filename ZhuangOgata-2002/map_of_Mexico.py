@@ -9,8 +9,7 @@ because the data were from Guerrero
 """
 import plotly.express as px
 import pandas as pd
-import geopandas as gpd
-import matplotlib.pyplot as plt
+
 
 def prepare_data(file_earthquakes, file_uxy, M0):
     # Earthquakes df and u_xy df joined
@@ -23,21 +22,16 @@ def prepare_data(file_earthquakes, file_uxy, M0):
     return df
 
 def show_results(df: pd.DataFrame):
-    # fig = px.scatter_map(
-    # df,
-    # lat=df["lat"],
-    # lon=df["lon"],
-    # hover_name=df["City"],  # text that appears over 
-    # hover_data=df[["State"]],  # text that appears after latitude and longitude
-    # color_discrete_sequence=["red"],
-    # zoom=3,
-    # height=300)
-    # fig.update_layout(map_style="open-street-map")
-    # fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
-    # fig.update_layout(map_bounds={"west": -180, "east": -80, "south": 10, "north": 90})
-    # fig.show()
+    fig = px.scatter_map(df, lat=df["Latitude"], lon=df["Longitude"],
+                         hover_name=df["Magnitude"],  # text that appears over 
+                         hover_data=df[["Year", "Month", "Day"]],  # text that appears after latitude and longitude
+                         color_discrete_sequence=["red"])
+    fig.update_layout(map_style="open-street-map")
+    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    fig.update_layout(map_bounds={"west": -180, "east": -80, "south": 10, "north": 90})
+    fig.show()
 
-    
+
 if __name__ == '__main__':
     earthquakes = "Earthquakes.csv"
     uxy = "U_xy.csv"
