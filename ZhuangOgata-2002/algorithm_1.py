@@ -13,7 +13,7 @@ from decimal import Decimal, getcontext  # To avoid overflow in multiplication
 
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=7, d=0.02, epsilon=10**(-3), max_iter=20):  # change M0=4.3
+    def __init__(self, archivo, M0=4.3, d=0.02, epsilon=10**(-3), max_iter=20):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
         self.d = d
@@ -22,11 +22,13 @@ class ETAS_Declustering:
         self.max_iter = max_iter
         self.convergence_df = pd.DataFrame(columns = ["iteration", "log L", "v", "A", "c", "alpha", "p", "d"])
 
-        self.v = 1
-        self.A = 0.5
-        self.c = 0.5
-        self.alpha = 0.5
-        self.p = 1.5
+        np.random.seed(121)
+
+        self.v = np.random.uniform(0.1, 1.0)  # initial value for v
+        self.A = np.random.uniform(0.1, 1.0)  # initial value for A
+        self.c = np.random.uniform(0.1, 1.0)  # initial value for c
+        self.alpha = np.random.uniform(0.1, 1.0)  # initial value for alpha
+        self.p = np.random.uniform(1.1, 2.0)  # initial value for p
 
         self.df = self.read_csv(self.archivo)
 
