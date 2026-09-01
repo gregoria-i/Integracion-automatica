@@ -56,21 +56,24 @@ class ETAS_Declustering:
             temp_p = np.zeros([self.N])
 
             for j in range(self.N):
-                print(f"j:{j}, v:{self.v}, A:{self.A}, c:{self.c}, alpha:{self.alpha}, p:{self.p}")
+                #print(f"j:{j}, v:{self.v}, A:{self.A}, c:{self.c}, alpha:{self.alpha}, p:{self.p}")
                 lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p)  # lambdaj has to be >0
                 temp_p[j] = self.calculate_pj(j, lambda_j)  # We have N lambdaj
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
-            mu = self.calculate_mu_estim(self.X, self.Y, temp_p)
+            mu = self.calculate_mu_estim(self.X, self.Y, temp_p)  # len(mu) = self.N
             self.u_xy_new = mu
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
             # v*u^{l+1}(x,y) as the background rate and stop.
+            
+            params = [self.v, self.A, self.c, self.alpha, self.p]
+            log_L = self.log_likelihood(params)
 
             temp = {
                 "iteration": self.l,
-                "log L": self.log_likelihood,
+                "log L": log_L,
                 "v": self.v,
                 "A": self.A,
                 "c": self.c,
@@ -277,7 +280,6 @@ class ETAS_Declustering:
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     obj = ETAS_Declustering(earthquakes)
-    # print(obj.df.head())
-    # print(obj.convergence_df)
+    print(obj.convergence_df)
     # print(obj.u_xy)
     # print(type(obj.u_xy))
