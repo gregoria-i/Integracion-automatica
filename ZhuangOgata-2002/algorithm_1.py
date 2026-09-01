@@ -90,6 +90,8 @@ class ETAS_Declustering:
             
             self.l +=1
             self.u_xy = self.u_xy_new.copy()
+
+        self.save_results()
         
     def read_csv(self, file):
         return pd.read_csv(file)
@@ -277,10 +279,12 @@ class ETAS_Declustering:
     def calculate_difference(self):
         return np.max(np.abs(self.u_xy_new - self.u_xy))
 
+    def save_results(self):
+        self.convergence_df.to_csv("Convergence_table.csv", index=False)
+        self.u_xy.name = "u_xy"
+        self.u_xy.to_csv("U_xy.csv", index=False)
+        
 
 if __name__ =='__main__':
     earthquakes = "Earthquakes.csv"
     obj = ETAS_Declustering(earthquakes)
-    print(obj.convergence_df)
-    # print(obj.u_xy)
-    # print(type(obj.u_xy))
