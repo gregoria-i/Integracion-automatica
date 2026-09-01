@@ -137,7 +137,7 @@ class ETAS_Declustering:
 
         epsilon = 10**(-4)
         bounds = [
-            (None, None),  # v
+            (0 + epsilon, None),  # v
             (0 + epsilon, 1),  # A
             (0 + epsilon, None),  # c
             (None, None),  # alpha
@@ -190,7 +190,8 @@ class ETAS_Declustering:
         """
         this function has to return lambda()> 0
         """
-        background = v * self.u_xy[j]
+
+        background = v * self.u_xy[j]  # >0
 
         offspring = 0
 
@@ -217,7 +218,7 @@ class ETAS_Declustering:
         """
         t and c have to be in days
         """
-        if (t>0 and p >= 1 and c>0):
+        if (t>0 and p > 1 and c>0):
             return (p-1) * c**(p-1) / (t+c)**(p)
         else:
             return 0
