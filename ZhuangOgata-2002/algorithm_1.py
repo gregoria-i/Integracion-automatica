@@ -24,11 +24,11 @@ class ETAS_Declustering:
 
         np.random.seed(121)
 
-        self.v = np.random.uniform(0.1, 1.0)  # initial value for v
-        self.A = np.random.uniform(0.1, 1.0)  # initial value for A
-        self.c = np.random.uniform(0.1, 1.0)  # initial value for c
-        self.alpha = np.random.uniform(0.1, 1.0)  # initial value for alpha
-        self.p = np.random.uniform(1.1, 2.0)  # initial value for p
+        self.v = np.random.uniform(0.1, 1.0)  
+        self.A = np.random.uniform(0.1, 1.0)  
+        self.c = np.random.uniform(0.1, 1.0)  
+        self.alpha = np.random.uniform(0.1, 1.0)  
+        self.p = np.random.uniform(1.1, 2.0)  
 
         self.df = self.read_csv(self.archivo)
 
