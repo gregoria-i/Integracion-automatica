@@ -9,6 +9,9 @@ because the data were from Guerrero
 """
 import plotly.express as px
 import pandas as pd
+import plotly.graph_objects as go
+from scipy.interpolate import griddata
+import numpy as np
 
 
 def prepare_data(file_earthquakes, file_uxy, M0):
@@ -18,17 +21,21 @@ def prepare_data(file_earthquakes, file_uxy, M0):
 
     df = df[df['Magnitude']>= M0].copy()
     df.reset_index(drop=True, inplace=True)
-    print(df.head())
 
     df['u_xy'] = u_xy_series['u_xy']
 
     return df
 
 def show_results(df: pd.DataFrame):
+    # Points in a color scale
+    #fig = px.density_map(df, lat=df["Latitude"], lon=df["Longitude"], z=df["u_xy"], 
     fig = px.scatter_map(df, lat=df["Latitude"], lon=df["Longitude"], color=df["u_xy"],
+    #fig = px.scatter(df, y=df["Latitude"], x=df["Longitude"], color=df["u_xy"],
                          hover_name=df["u_xy"],  # text that appears over 
                          hover_data=df[["Magnitude", "Year", "Month", "Day"]],  # text that appears after latitude and longitude
+                         color_continuous_scale='plasma'
                          )
+
     fig.update_layout(map_style="open-street-map")
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
     fig.update_layout(map_bounds={"west": -180, "east": -80, "south": 10, "north": 90})
