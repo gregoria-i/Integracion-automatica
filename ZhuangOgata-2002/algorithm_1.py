@@ -150,7 +150,7 @@ class ETAS_Declustering:
         def neg(x0):
             return -self.log_likelihood(x0)
 
-        result = minimize(neg, x0, method="L-BFGS-B", bounds=bounds)
+        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds, tol=10**(-4))
 
         self.v = result.x[0]
         self.A = result.x[1]
