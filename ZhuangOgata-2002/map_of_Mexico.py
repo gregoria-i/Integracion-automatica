@@ -7,21 +7,20 @@ map_of_Mexico.py
 This script is for review the results of algorithm.py (background rate) u_xy and show them over a map of Mexico, 
 because the data were from Guerrero
 """
-import plotly.express as px
-import pandas as pd
-import plotly.graph_objects as go
-from scipy.interpolate import griddata
-
 # for contourf
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
+from algorithm_1 import ETAS_Declustering
 
 
-def prepare_grid(gdf, file_earthquakes, file_uxy):
+def prepare_grid(gdf, file_earthquakes):
     xmin, ymin, xmax, ymax = gdf.total_bounds
     X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
-    Z = -X**2 - Y**2  # this function is the result from evaluate u_xy over the grid
+
+    obj = ETAS_Declustering(file_earthquakes)
+    Z = obj.evaluate_u_over_grid(X, Y)
+
     return X, Y, Z
 
 def show_grid_results(gdf, X, Y, Z):
@@ -39,5 +38,5 @@ if __name__ == '__main__':
     shp_mexico = "Mapa base a nivel estatal y mapa general. Formato Raster/mbtifgw.shp"
 
     gdf = gpd.read_file(shp_mexico)
-    x, y, z = prepare_grid(gdf, earthquakes, uxy)
+    x, y, z = prepare_grid(gdf, earthquakes)
     show_grid_results(gdf, x, y, z)

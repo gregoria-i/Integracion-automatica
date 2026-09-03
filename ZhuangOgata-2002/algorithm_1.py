@@ -9,7 +9,6 @@ background rate and the branching structure.
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
-from decimal import Decimal, getcontext  # To avoid overflow in multiplication
 
 
 class ETAS_Declustering:
@@ -281,6 +280,11 @@ class ETAS_Declustering:
     def calculate_difference(self):
         return np.max(np.abs(self.u_xy_new - self.u_xy))
 
+    def evaluate_u_over_grid(self, X, Y):
+        p = self.p
+        Z = self.calculate_mu_estim(X, Y, p)
+        return Z
+    
     def save_results(self):
         self.convergence_df.to_csv("Convergence_table.csv", index=False)
         self.u_xy.name = "u_xy"
