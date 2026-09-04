@@ -12,7 +12,7 @@ from scipy.optimize import minimize
 
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, d=0.02, epsilon=10**(-3), max_iter=20):  # change M0=4.3
+    def __init__(self, archivo, M0=4.3, d=0.02, epsilon=1e-3, max_iter=20):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
         self.d = d
@@ -138,10 +138,10 @@ class ETAS_Declustering:
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p]
 
-        epsilon = 10**(-4)
+        epsilon = 1e-3
         bounds = [
             (0 + epsilon, None),  # v
-            (0 + epsilon, 1),  # A
+            (0 + epsilon, 1 - epsilon),  # A
             (0 + epsilon, None),  # c
             (None, None),  # alpha
             (1 + epsilon, None),  # p
@@ -150,7 +150,7 @@ class ETAS_Declustering:
         def neg(x0):
             return -self.log_likelihood(x0)
 
-        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds, tol=10**(-4))
+        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds, tol=1e-3)
 
         self.v = result.x[0]
         self.A = result.x[1]
