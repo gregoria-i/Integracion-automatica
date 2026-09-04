@@ -17,25 +17,26 @@ from algorithm_1 import ETAS_Declustering
 
 
 def prepare_grid(gdf, file_earthquakes):
-    xmin = -110
-    ymin = 12
-    xmax = -95
-    ymax = 22
+    xmin = -106
+    xmax = -96
+    ymin = 15
+    ymax = 20
 
     area = box(xmin, ymin, xmax, ymax)  # reduce the area to create a smaller grid
     gdf = gdf.clip(area)
 
     X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
-    #obj = ETAS_Declustering(file_earthquakes)
-    #Z = obj.evaluate_u_over_grid(X, Y)
-    Z = - X - Y
+    obj = ETAS_Declustering(file_earthquakes)
+    Z = obj.evaluate_u_over_grid(X, Y)
     return X, Y, Z, gdf
 
 def show_grid_results(gdf, X, Y, Z):
-    plt.style.use('_mpl-gallery-nogrid')
     levels = np.linspace(Z.min(), Z.max())
     fig, ax = plt.subplots()
-    ax.contourf(X, Y, Z, levels=levels)
+    plt.contourf(X, Y, Z, levels=levels, cmap='inferno')
+    plt.colorbar()
+    plt.grid()
+    plt.title("Background intensity")
     gdf.boundary.plot(ax=ax, color='black')
     plt.show()
 

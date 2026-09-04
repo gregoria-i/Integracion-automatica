@@ -12,7 +12,7 @@ from scipy.optimize import minimize
 
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, d=0.02, epsilon=1e-3, max_iter=20):  # change M0=4.3
+    def __init__(self, archivo, M0=6, d=0.02, epsilon=1e-3, max_iter=20):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
         self.d = d
