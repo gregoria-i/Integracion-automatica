@@ -11,17 +11,25 @@ because the data were from Guerrero
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
+from shapely.geometry import box
+
 from algorithm_1 import ETAS_Declustering
 
 
 def prepare_grid(gdf, file_earthquakes):
-    xmin, ymin, xmax, ymax = gdf.total_bounds
+    xmin = -110
+    ymin = 12
+    xmax = -95
+    ymax = 22
+
+    area = box(xmin, ymin, xmax, ymax)  # reduce the area to create a smaller grid
+    gdf = gdf.clip(area)
+
     X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
-
-    obj = ETAS_Declustering(file_earthquakes)
-    Z = obj.evaluate_u_over_grid(X, Y)
-
-    return X, Y, Z
+    #obj = ETAS_Declustering(file_earthquakes)
+    #Z = obj.evaluate_u_over_grid(X, Y)
+    Z = - X - Y
+    return X, Y, Z, gdf
 
 def show_grid_results(gdf, X, Y, Z):
     plt.style.use('_mpl-gallery-nogrid')
@@ -34,9 +42,8 @@ def show_grid_results(gdf, X, Y, Z):
 
 if __name__ == '__main__':
     earthquakes = "Earthquakes.csv"
-    uxy = "U_xy.csv"
     shp_mexico = "Mapa base a nivel estatal y mapa general. Formato Raster/mbtifgw.shp"
 
     gdf = gpd.read_file(shp_mexico)
-    x, y, z = prepare_grid(gdf, earthquakes)
+    x, y, z, gdf = prepare_grid(gdf, earthquakes)
     show_grid_results(gdf, x, y, z)
