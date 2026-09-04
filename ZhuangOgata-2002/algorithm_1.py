@@ -140,10 +140,10 @@ class ETAS_Declustering:
 
         epsilon = 1e-3
         bounds = [
-            (0 + epsilon, None),  # v
+            (0 + epsilon, 1),  # v
             (0 + epsilon, 1 - epsilon),  # A
             (0 + epsilon, None),  # c
-            (None, None),  # alpha
+            (0 + epsilon, None),  # alpha
             (1 + epsilon, None),  # p
         ]
 
