@@ -14,7 +14,7 @@ import numpy as np
 from shapely.geometry import box
 
 from algorithm_1 import ETAS_Declustering
-
+from datetime import datetime
 
 def prepare_grid(gdf, file_earthquakes):
     xmin = -106
@@ -31,9 +31,10 @@ def prepare_grid(gdf, file_earthquakes):
     return X, Y, Z, gdf
 
 def show_grid_results(gdf, X, Y, Z):
+    # plt.style.use('_mpl-gallery-nogrid')
     levels = np.linspace(Z.min(), Z.max())
     fig, ax = plt.subplots()
-    plt.contourf(X, Y, Z, levels=levels, cmap='inferno')
+    plt.contour(X, Y, Z, levels=levels, cmap='inferno')
     plt.colorbar()
     plt.grid()
     plt.title("Background intensity")
@@ -42,9 +43,14 @@ def show_grid_results(gdf, X, Y, Z):
 
 
 if __name__ == '__main__':
+    inicio = datetime.now()
     earthquakes = "Earthquakes.csv"
     shp_mexico = "Mapa base a nivel estatal y mapa general. Formato Raster/mbtifgw.shp"
 
     gdf = gpd.read_file(shp_mexico)
     x, y, z, gdf = prepare_grid(gdf, earthquakes)
+    np.savetxt("U_grid.csv", z, delimiter=",",
+               comments="", fmt="%.15g")
+    fin = datetime.now()
+    print(f"Tiempo utilizado: {str(fin-inicio)}")
     show_grid_results(gdf, x, y, z)

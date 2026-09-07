@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-
 class ETAS_Declustering:
     def __init__(self, archivo, M0=4.3, d=2e-1, epsilon=1e-3, max_iter=20):  # change M0=4.3
         self.archivo = archivo
@@ -23,7 +22,7 @@ class ETAS_Declustering:
 
         np.random.seed(121)
 
-        self.v = np.random.uniform(0.1, 1.0)  
+        self.v = np.random.uniform(0.5, 1.0)  
         self.A = np.random.uniform(0.1, 1.0)  
         self.c = np.random.uniform(0.1, 1.0)  
         self.alpha = np.random.uniform(0.1, 1.0)  
@@ -140,11 +139,11 @@ class ETAS_Declustering:
 
         epsilon = 1e-3
         bounds = [
-            (0 + epsilon, 1),  # v
+            (1 - epsilon, 1 + epsilon),  # v
             (0 + epsilon, 1 - epsilon),  # A
-            (0 + epsilon, None),  # c
-            (0 + epsilon, None),  # alpha
-            (1 + epsilon, None),  # p
+            (0 + epsilon, 2 - epsilon),  # c
+            (0 + epsilon, 2 - epsilon),  # alpha
+            (1 + epsilon, 2 - epsilon),  # p
         ]
 
         def neg(x0):
@@ -287,8 +286,6 @@ class ETAS_Declustering:
     
     def save_results(self):
         self.convergence_df.to_csv("Convergence_table.csv", index=False)
-        self.u_xy.name = "u_xy"
-        self.u_xy.to_csv("U_xy.csv", index=False)
         
 
 if __name__ =='__main__':
