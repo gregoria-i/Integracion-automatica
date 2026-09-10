@@ -11,7 +11,7 @@ import pandas as pd
 from scipy.optimize import minimize
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=6, kernel_d=2e-2, epsilon=1e-3, max_iter=20):  # change M0=4.3
+    def __init__(self, archivo, M0=4.3, kernel_d=2e-2, epsilon=1e-3, max_iter=20):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
         self.kernel_d = kernel_d
@@ -138,14 +138,13 @@ class ETAS_Declustering:
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p, self.d]
 
-        epsilon = 1e-3
         bounds = [  # I adjusted some bounds with the work of Bañales, Nishikawa, and Ito (2025)
             (0, 1000),  # v (adjusted)
-            (0 + epsilon, 100),  # A (adjusted)
-            (0 + epsilon, 2),  # c
-            (0 + epsilon, 2),  # alpha
-            (1 + epsilon, 2),  # p
-            (0 + epsilon, 2)  # d
+            (0.01, 100),  # A (adjusted)
+            (0 + 1e-3, 1e5),  # c
+            (0.5, 1.5),  # alpha
+            (1 + 1e-10, 10),  # p
+            (0 + 1e-3, 1e-1)  # d
         ]
 
         def neg(x0):
