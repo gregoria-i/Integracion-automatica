@@ -22,7 +22,7 @@ def prepare_grid(gdf, file_earthquakes):
     ymin = 15
     ymax = 20
 
-    area = box(xmin, ymin, xmax, ymax)  # reduce the area to create a smaller grid
+    area = box(xmin, ymin, xmax, ymax)  # a smaller grid
     gdf = gdf.clip(area)
 
     X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
@@ -31,7 +31,6 @@ def prepare_grid(gdf, file_earthquakes):
     return X, Y, Z, gdf
 
 def show_grid_results(gdf, X, Y, Z):
-    # plt.style.use('_mpl-gallery-nogrid')
     levels = np.linspace(Z.min(), Z.max())
     fig, ax = plt.subplots()
     plt.contour(X, Y, Z, levels=levels, cmap='inferno')
@@ -44,6 +43,7 @@ def show_grid_results(gdf, X, Y, Z):
 
 if __name__ == '__main__':
     inicio = datetime.now()
+
     earthquakes = "Earthquakes.csv"
     shp_mexico = "Mapa base a nivel estatal y mapa general. Formato Raster/mbtifgw.shp"
 
@@ -51,6 +51,8 @@ if __name__ == '__main__':
     x, y, z, gdf = prepare_grid(gdf, earthquakes)
     np.savetxt("U_grid.csv", z, delimiter=",",
                comments="", fmt="%.15g")
+
     fin = datetime.now()
     print(f"Tiempo utilizado: {str(fin-inicio)}")
+
     show_grid_results(gdf, x, y, z)

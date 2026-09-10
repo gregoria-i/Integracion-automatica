@@ -11,10 +11,10 @@ import pandas as pd
 from scipy.optimize import minimize
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, d=2e-1, epsilon=1e-3, max_iter=20):  # change M0=4.3
+    def __init__(self, archivo, M0=6, kernel_d=2e-2, epsilon=1e-3, max_iter=20):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
-        self.d = d
+        self.kernel_d = kernel_d
         self.epsilon = epsilon  
         self.N = 0
         self.max_iter = max_iter
@@ -27,6 +27,7 @@ class ETAS_Declustering:
         self.c = np.random.uniform(0.1, 1.0)  
         self.alpha = np.random.uniform(0.1, 1.0)  
         self.p = np.random.uniform(1.1, 2.0)  
+        self.d = np.random.uniform(0.1, 1.0)
 
         self.df = self.read_csv(self.archivo)
 
@@ -38,7 +39,7 @@ class ETAS_Declustering:
 
         self.calculate_bandwidth()
 
-        # 2. Set l = 0 and u^{(0)}(x,y) = 1
+        # 2. Set l = 0 and u^{(0)}(x,y) = 1 (u is a vector)
         self.u_xy = np.ones(self.N)  # for each one of the earthquakes
         self.u_xy_new = np.ones(self.N)  # with the same size 
 
@@ -56,8 +57,7 @@ class ETAS_Declustering:
             temp_p = np.zeros([self.N])
 
             for j in range(self.N):
-                #print(f"j:{j}, v:{self.v}, A:{self.A}, c:{self.c}, alpha:{self.alpha}, p:{self.p}")
-                lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p)  # lambdaj has to be >0
+                lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p, self.d)  # lambdaj has to be >0
                 temp_p[j] = self.calculate_pj(j, lambda_j)  # We have N lambdaj
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
@@ -68,7 +68,7 @@ class ETAS_Declustering:
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
             # v*u^{l+1}(x,y) as the background rate and stop.
             
-            params = [self.v, self.A, self.c, self.alpha, self.p]
+            params = [self.v, self.A, self.c, self.alpha, self.p, self.d]
             log_L = self.log_likelihood(params)
 
             temp = {
@@ -128,22 +128,24 @@ class ETAS_Declustering:
     def calculate_bandwidth(self):
         """
         self.n_p is involved in the calculation of dj, but I set de degree value as the article
+        self.d and self.kernel_d are different variables
         """
-        self.dj = np.full(self.N, self.d)
+        self.dj = np.full(self.N, self.kernel_d)
 
     def fit_conditional_intensity(self):
         """
         This function is for estimate the parameters and updates the global parameters
         """
-        x0 = [self.v, self.A, self.c, self.alpha, self.p]
+        x0 = [self.v, self.A, self.c, self.alpha, self.p, self.d]
 
         epsilon = 1e-3
-        bounds = [
+        bounds = [  # I will adjust this bounds with the work of Bañales, Nishikawa, and Ito (2025)
             (1 - epsilon, 1 + epsilon),  # v
             (0 + epsilon, 1 - epsilon),  # A
             (0 + epsilon, 2 - epsilon),  # c
             (0 + epsilon, 2 - epsilon),  # alpha
             (1 + epsilon, 2 - epsilon),  # p
+            (0 + epsilon, 1 - epsilon)  # d (I must check if d has a upper bound defined in the article)
         ]
 
         def neg(x0):
@@ -156,18 +158,21 @@ class ETAS_Declustering:
         self.c = result.x[2]  # days
         self.alpha = result.x[3]
         self.p = result.x[4]
+        self.d = result.x[5]
 
     def log_likelihood(self, params):
         """
         the internal functions are evaluated with params, not with the global variables
         """
-        v, A, c, alpha, p = params
+        v, A, c, alpha, p, d = params
         log_history = 0
 
+        # \sum_{k=1}^{N}log \lambda_{params}(tk, xk, yk | Ht)
         for k in range(self.N):
-            lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p)
+            lambda_k = self.evaluate_intensity_j(k, v, A, c, alpha, p, d)
             log_history += np.log(lambda_k)
 
+        # \int_{0}^{T}\int\int_S \lambda_{params}(t,x,y | Ht)dxdydt
         integral_back = v * self.T_total  # integral of the intensity
 
         integral_offspring = 0.0  # Offspring
@@ -177,7 +182,7 @@ class ETAS_Declustering:
             Mi = self.M[i]
 
             T_remaining = self.T_total - self.T[i]  # Time available after event i
-
+            # here I assume \int f = 1 because it was a density function
             integral_g = (1 - (c / (T_remaining + c)) ** (p - 1)) # Integral of g(t - ti) from ti to T
 
             integral_offspring += (self.kappa(Mi, A, alpha)* integral_g)
@@ -188,7 +193,7 @@ class ETAS_Declustering:
         l_L_lambda = log_history - integral  # l_L_lambda its a numpy.float64
         return l_L_lambda
 
-    def evaluate_intensity_j(self, j, v, A, c, alpha, p):
+    def evaluate_intensity_j(self, j, v, A, c, alpha, p, d):
         """
         this function has to return lambda()> 0
         """
@@ -198,7 +203,6 @@ class ETAS_Declustering:
         offspring = 0
 
         for i in range(j):
-
             Mi = self.M[i]
             delta_t = self.T[j] - self.T[i]
             delta_x = self.X[j] - self.X[i]
@@ -206,7 +210,7 @@ class ETAS_Declustering:
 
             k_evaluated = self.kappa(Mi, A, alpha)
             g_evaluated = self.g(delta_t, c, p)  # >0
-            f_evaluated = self.f(delta_x, delta_y, Mi, self.dj[i], alpha)  # sometimes =0
+            f_evaluated = self.f(delta_x, delta_y, Mi, d, alpha)  # sometimes =0
 
             offspring += k_evaluated * g_evaluated * f_evaluated  
 
@@ -242,14 +246,13 @@ class ETAS_Declustering:
                     it has to be calculated before
         """        
         Mi = self.M[i]
-        di = self.dj[i]
         delta_t = self.T[j] - self.T[i]
         delta_x = self.X[j] - self.X[i]
         delta_y = self.Y[j] - self.Y[i]
 
         pij = (self.kappa(Mi, self.A, self.alpha) 
                * self.g(delta_t, self.c, self.p) 
-               * self.f(delta_x, delta_y, Mi, di, self.alpha)
+               * self.f(delta_x, delta_y, Mi, self.d, self.alpha)
                ) / lambda_j
         return pij
     
@@ -271,7 +274,7 @@ class ETAS_Declustering:
             delta_x = x - self.X[j]
             delta_y = y - self.Y[j]
 
-            kdj = (2 * np.pi * self.d)**(-1) * np.exp(-(delta_x**2 + delta_y**2) / (2 * self.d**2))
+            kdj = (2 * np.pi * self.kernel_d)**(-1) * np.exp(-(delta_x**2 + delta_y**2) / (2 * self.kernel_d**2))
             temp += (1-p) * kdj
 
         return temp / self.T_total
