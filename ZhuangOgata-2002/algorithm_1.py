@@ -22,8 +22,8 @@ class ETAS_Declustering:
 
         np.random.seed(121)
 
-        self.v = np.random.uniform(0.5, 1.0)  
-        self.A = np.random.uniform(0.1, 1.0)  
+        self.v = np.random.uniform(0.0, 1000)  
+        self.A = np.random.uniform(0.01, 100)  
         self.c = np.random.uniform(0.1, 1.0)  
         self.alpha = np.random.uniform(0.1, 1.0)  
         self.p = np.random.uniform(1.1, 2.0)  
@@ -139,13 +139,13 @@ class ETAS_Declustering:
         x0 = [self.v, self.A, self.c, self.alpha, self.p, self.d]
 
         epsilon = 1e-3
-        bounds = [  # I will adjust this bounds with the work of Bañales, Nishikawa, and Ito (2025)
-            (1 - epsilon, 1 + epsilon),  # v
-            (0 + epsilon, 1 - epsilon),  # A
-            (0 + epsilon, 2 - epsilon),  # c
-            (0 + epsilon, 2 - epsilon),  # alpha
-            (1 + epsilon, 2 - epsilon),  # p
-            (0 + epsilon, 1 - epsilon)  # d (I must check if d has a upper bound defined in the article)
+        bounds = [  # I adjusted some bounds with the work of Bañales, Nishikawa, and Ito (2025)
+            (0, 1000),  # v (adjusted)
+            (0 + epsilon, 100),  # A (adjusted)
+            (0 + epsilon, 2),  # c
+            (0 + epsilon, 2),  # alpha
+            (1 + epsilon, 2),  # p
+            (0 + epsilon, 2)  # d
         ]
 
         def neg(x0):
