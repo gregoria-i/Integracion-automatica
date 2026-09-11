@@ -47,27 +47,31 @@ class ETAS_Declustering:
 
         condition = True
         while condition and self.l < self.max_iter:
+            print("--- --- ---")
+            print(f"Iter {self.l}")
             # 3. Using the maximum likelihood procedure, fit the conditional
             #   intensity function λ(t,x,y|Ht) = vu^{(1)}(x,y) + 
             #                               \sum_{k:tk<t}κ(Mk)g(t-tk)*f(x-xk,y-yk|Mk)
             # to the earthquake data.
+            print(f"Fitting conditional intensity")
             self.fit_conditional_intensity()
 
             # 4. Calculate ρj for each j=1,2,...,N
             temp_p = np.zeros([self.N])
+            print(f"Calculating pj for each earthquake")
 
             for j in range(self.N):
                 lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p, self.d)  # lambdaj has to be >0
                 temp_p[j] = self.calculate_pj(j, lambda_j)  # We have N lambdaj
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
+            print(f"Calculating mu estimator")
             mu = self.calculate_mu_estim(self.X, self.Y, temp_p)  # len(mu) = self.N
             self.u_xy_new = mu
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
             # number , then set l = l + 1 and go to step 3. Otherwise, take 
             # v*u^{l+1}(x,y) as the background rate and stop.
-            
             params = [self.v, self.A, self.c, self.alpha, self.p, self.d]
             log_L = self.log_likelihood(params)
 
@@ -83,12 +87,12 @@ class ETAS_Declustering:
             
             self.convergence_df.loc[len(self.convergence_df)] = temp
 
+            print(f"Check difference")
             self.difference = self.calculate_difference()
             if self.difference <= self.epsilon:
                 condition = False
                 break
-
-            print(f"Iter {self.l}")
+        
             self.l +=1
             self.u_xy = self.u_xy_new.copy()
 

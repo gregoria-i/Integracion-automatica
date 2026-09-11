@@ -49,7 +49,7 @@ def prepare_grid(gdf, filtered_earthquakes):
     gdf = gdf.clip(area)
 
     X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
-    obj = ETAS_Declustering(filtered_earthquakes, M0=5.5)
+    obj = ETAS_Declustering(filtered_earthquakes, M0=6)
     Z = obj.evaluate_u_over_grid(X, Y)
     return X, Y, Z, gdf
 
