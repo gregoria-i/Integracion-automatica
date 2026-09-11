@@ -11,12 +11,35 @@ because the data were from Guerrero
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
 from shapely.geometry import box
+from shapely.geometry import Point, Polygon
 
 from algorithm_1 import ETAS_Declustering
 from datetime import datetime
 
-def prepare_grid(gdf, file_earthquakes):
+
+def filter_with_polygon(polygon, earthquakes_file):
+
+    df = pd.read_csv(earthquakes_file)
+    idx_inside = []
+
+    for index, row in df.iterrows():
+        point = Point(row['Longitude'], row['Latitude'])
+
+        if polygon.contains(point):
+            idx_inside.append(index)
+
+    # filter with idx
+    filtered_df = df.loc[idx_inside].copy()
+
+    new_csv = "Earthquakes_region.csv"
+    filtered_df.to_csv(new_csv, index=False)
+
+    return new_csv
+
+def prepare_grid(gdf, filtered_earthquakes):
     xmin = -106
     xmax = -96
     ymin = 15
@@ -26,7 +49,7 @@ def prepare_grid(gdf, file_earthquakes):
     gdf = gdf.clip(area)
 
     X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
-    obj = ETAS_Declustering(file_earthquakes)
+    obj = ETAS_Declustering(filtered_earthquakes, M0=5.5)
     Z = obj.evaluate_u_over_grid(X, Y)
     return X, Y, Z, gdf
 
@@ -47,8 +70,15 @@ if __name__ == '__main__':
     earthquakes = "Earthquakes.csv"
     shp_mexico = "Mapa base a nivel estatal y mapa general. Formato Raster/mbtifgw.shp"
 
+    Region=np.loadtxt('./region1.txt')
+    Region= Polygon(Region)
+
+    filter_earthquakes = filter_with_polygon(Region, earthquakes)
+
     gdf = gpd.read_file(shp_mexico)
-    x, y, z, gdf = prepare_grid(gdf, earthquakes)
+
+    x, y, z, gdf = prepare_grid(gdf, filter_earthquakes)
+
     np.savetxt("U_grid.csv", z, delimiter=",",
                comments="", fmt="%.15g")
 

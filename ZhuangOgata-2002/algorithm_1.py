@@ -23,11 +23,11 @@ class ETAS_Declustering:
         np.random.seed(121)
 
         self.v = np.random.uniform(0.0, 1000)  
-        self.A = np.random.uniform(0.01, 100)  
+        self.A = np.random.uniform(0.01, 2)  
         self.c = np.random.uniform(0.1, 1.0)  
-        self.alpha = np.random.uniform(0.1, 1.0)  
+        self.alpha = np.random.uniform(0.5, 1.5)  
         self.p = np.random.uniform(1.1, 2.0)  
-        self.d = np.random.uniform(0.1, 1.0)
+        self.d = np.random.uniform(0.01, 0.05)
 
         self.df = self.read_csv(self.archivo)
 
@@ -87,7 +87,8 @@ class ETAS_Declustering:
             if self.difference <= self.epsilon:
                 condition = False
                 break
-            
+
+            print(f"Iter {self.l}")
             self.l +=1
             self.u_xy = self.u_xy_new.copy()
 
@@ -138,19 +139,19 @@ class ETAS_Declustering:
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p, self.d]
 
-        bounds = [  # I adjusted some bounds with the work of Bañales, Nishikawa, and Ito (2025)
-            (0, 1000),  # v (adjusted)
-            (0.01, 100),  # A (adjusted)
-            (0 + 1e-3, 1e5),  # c
-            (0.5, 1.5),  # alpha
-            (1 + 1e-10, 10),  # p
-            (0 + 1e-3, 1e-1)  # d
+        bounds = [  # I adjusted bounds with the work of Bañales, Nishikawa, and Ito (2025)
+            (0 + 1e-3, 1000),  # v 
+            (0 + 1e-3, 2),  # A 
+            (0 + 1e-3, 2),  # c
+            (0.5, 2),  # alpha
+            (1 + 1e-10, 2),  # p
+            (0 + 1e-3, 2)  # d
         ]
 
         def neg(x0):
             return -self.log_likelihood(x0)
 
-        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds, tol=1e-3)
+        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds)
 
         self.v = result.x[0]
         self.A = result.x[1]
