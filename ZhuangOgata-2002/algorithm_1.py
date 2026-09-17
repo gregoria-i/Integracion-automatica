@@ -22,12 +22,12 @@ class ETAS_Declustering:
 
         np.random.seed(121)
 
-        self.v = np.random.uniform(0.0, 1000)  
-        self.A = np.random.uniform(0.01, 2)  
-        self.c = np.random.uniform(0.1, 1.0)  
-        self.alpha = np.random.uniform(0.5, 1.5)  
-        self.p = np.random.uniform(1.1, 2.0)  
-        self.d = np.random.uniform(0.01, 0.05)
+        self.v = 0.0
+        self.A = 0.0
+        self.c = 0.0
+        self.alpha = 0.0
+        self.p = 0.0
+        self.d = 0.0
 
         self.df = self.read_csv(self.archivo)
 
@@ -143,19 +143,19 @@ class ETAS_Declustering:
         """
         x0 = [self.v, self.A, self.c, self.alpha, self.p, self.d]
 
-        bounds = [  # I adjusted bounds with the work of Bañales, Nishikawa, and Ito (2025)
-            (0 + 1e-3, 1000),  # v 
-            (0 + 1e-3, 2),  # A 
-            (0 + 1e-3, 2),  # c
-            (0.5, 2),  # alpha
-            (1 + 1e-10, 2),  # p
-            (0 + 1e-3, 2)  # d
+        bounds = [ 
+            (1 - 1e-4, 1000),  # v 
+            (10**(-5), 1- 10**(-10)),  # A 
+            (10**(-8), 5),  # c
+            (0.8, 1.5),  # alpha
+            (1+10**(-10), 2),  # p
+            (10 **(-10), 1)  # d
         ]
 
         def neg(x0):
             return -self.log_likelihood(x0)
 
-        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds)
+        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds, options={"maxiter":20, "fatol":1e-2})
 
         self.v = result.x[0]
         self.A = result.x[1]
