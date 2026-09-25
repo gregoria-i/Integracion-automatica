@@ -11,7 +11,7 @@ import pandas as pd
 from scipy.optimize import minimize
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=5.3, epsilon=1e-10, max_iter=10):  # change M0=4.3
+    def __init__(self, archivo, M0=4.3, epsilon=1e-3, max_iter=10):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
         self.epsilon = epsilon  
@@ -32,8 +32,6 @@ class ETAS_Declustering:
         
         # 1. Given a preliminary parameter np, say 20, calculate the bandwidth dj
         #   for each event (tj, xj, yj, Mj) 
-        self.n_p = 20  # at least np other earthquakes
-
         self.calculate_bandwidth()
 
         # 2. Set l = 0 and u^{(0)}(x,y) = 1 (u is a vector)
@@ -134,7 +132,25 @@ class ETAS_Declustering:
         self.n_p is involved in the calculation of dj, but I set de degree value as the article
         self.d and self.bandwidth_d are different variables
         """
-        self.bandwidth_d = np.full(self.N, 1)  # I must adjust dj
+        self.n_p = 20  # at least np other earthquakes
+        # given a suitable integer np, find the smallest disk centered at the location of the jth event that includes at least np other earthquakes and with a radius larger than some small value, and let its radius be dj
+        self.bandwidth_d = np.zeros(self.N)  # I must adjust dj
+
+        coords = np.column_stack((self.X, self.Y))
+
+        for j in range(self.N):
+            distancias = np.sqrt((coords[:, 0] - self.X[j])**2 + (coords[:, 1] - self.Y[j])**2)
+
+            distancias_ordenadas = np.sort(distancias[distancias > 0])
+
+            if len(distancias_ordenadas) >= self.n_p:
+                self.bandwidth_d[j] = distancias_ordenadas[self.n_p - 1]
+            else:
+                self.bandwidth_d[j] = distancias_ordenadas[-1]
+
+            self.bandwidth_d[j] = max(self.bandwidth_d[j], 1e-2)
+
+        print(self.bandwidth_d)
 
     def fit_conditional_intensity(self):
         """
@@ -143,8 +159,8 @@ class ETAS_Declustering:
         x0 = [self.v, self.A, self.c, self.alpha, self.p, self.d]
 
         bounds = [ 
-            (0, 1000),  # v 
-            (0.01, 100),  # A 
+            (1-10**(-10), 1000),  # v 
+            (0.01, 10),  # A 
             (0 + 10**(-3), 10**5),  # c
             (0.05, 1.5),  # alpha
             (1+10**(-10), 10),  # p

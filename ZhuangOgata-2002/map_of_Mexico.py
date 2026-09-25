@@ -48,20 +48,31 @@ def prepare_grid(gdf, filtered_earthquakes):
     area = box(xmin, ymin, xmax, ymax)  # a smaller grid
     gdf = gdf.clip(area)
 
-    X, Y = np.meshgrid(np.linspace(xmin, xmax, 64), np.linspace(ymin, ymax, 64))
+    X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
     obj = ETAS_Declustering(filtered_earthquakes)
     Z = obj.evaluate_u_over_grid(X, Y)
-    return X, Y, Z, gdf
+    lat = obj.X
+    lon = obj.Y
+    params = (obj.v, obj.A, obj.c, obj.alpha, obj.p, obj.d)
+    return gdf, X, Y, Z, lat, lon, params
 
-def show_grid_results(gdf, X, Y, Z):
-    levels = np.linspace(Z.min(), Z.max())
+
+def show(gdf, X_grid, Y_grid, Z_grid, X_epicenter, Y_epicenter, params):
+
     fig, ax = plt.subplots()
-    plt.contourf(X, Y, Z, levels=levels, cmap='viridis')
+    levels = np.linspace(Z_grid.min(), Z_grid.max())
+    plt.contourf(X_grid, Y_grid, Z_grid, levels=levels, cmap='viridis')
     plt.colorbar()
-    plt.grid()
-    plt.title("Background intensity")
+
     gdf.boundary.plot(ax=ax, color='black')
+
+    ax.scatter(X_epicenter, Y_epicenter, label='Mainshocks', s=5)
+    ax.legend()
+
+    v, A, c, alpha, p, d = params
+    plt.title(f"Background intensity \nv={round(v,5)}, A={round(A,5)}, c={round(c, 5)}, alpha={round(alpha, 5)}, p={round(p, 5)}, d={round(d,5)}")
     plt.show()
+
 
 
 if __name__ == '__main__':
@@ -77,12 +88,12 @@ if __name__ == '__main__':
 
     gdf = gpd.read_file(shp_mexico)
 
-    x, y, z, gdf = prepare_grid(gdf, filter_earthquakes)
+    gdf, X_g, Y_g, Z_g, lats, longs, params = prepare_grid(gdf, filter_earthquakes)
 
-    np.savetxt("U_grid.csv", z, delimiter=",",
+    np.savetxt("U_grid.csv", Z_g, delimiter=",",
                comments="", fmt="%.15g")
 
     fin = datetime.now()
     print(f"Tiempo utilizado: {str(fin-inicio)}")
 
-    show_grid_results(gdf, x, y, z)
+    show(gdf, X_g, Y_g, Z_g, lats, longs, params)
