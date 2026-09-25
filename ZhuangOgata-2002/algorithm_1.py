@@ -11,16 +11,13 @@ import pandas as pd
 from scipy.optimize import minimize
 
 class ETAS_Declustering:
-    def __init__(self, archivo, M0=4.3, kernel_d=2e-2, epsilon=1e-3, max_iter=20):  # change M0=4.3
+    def __init__(self, archivo, M0=5.3, epsilon=1e-10, max_iter=10):  # change M0=4.3
         self.archivo = archivo
         self.M0 = M0
-        self.kernel_d = kernel_d
         self.epsilon = epsilon  
         self.N = 0
         self.max_iter = max_iter
         self.convergence_df = pd.DataFrame(columns = ["iteration", "log L", "v", "A", "c", "alpha", "p", "d"])
-
-        np.random.seed(121)
 
         self.v = 0.0
         self.A = 0.0
@@ -57,16 +54,16 @@ class ETAS_Declustering:
             self.fit_conditional_intensity()
 
             # 4. Calculate ρj for each j=1,2,...,N
-            temp_p = np.zeros([self.N])
+            self.rho_list = np.ones([self.N])  # P(the jth event to be an offspring | Ht) = 1
             print(f"Calculating pj for each earthquake")
 
             for j in range(self.N):
                 lambda_j = self.evaluate_intensity_j(j, self.v, self.A, self.c, self.alpha, self.p, self.d)  # lambdaj has to be >0
-                temp_p[j] = self.calculate_pj(j, lambda_j)  # We have N lambdaj
+                self.rho_list[j] = self.calculate_pj(j, lambda_j)  # We have N lambdaj
 
             # 5. Calculate μ(x,y) and record as u^{l+1}(x,y)
             print(f"Calculating mu estimator")
-            mu = self.calculate_mu_estim(self.X, self.Y, temp_p)  # len(mu) = self.N
+            mu = self.calculate_mu_estim(self.X, self.Y)  # len(mu) = self.N
             self.u_xy_new = mu
 
             # 6. If max_{(x,y)}|u^{l+1}(x,y)-u^{l}(x,y)|> ε, where ε is a small positive
@@ -104,6 +101,8 @@ class ETAS_Declustering:
     def prepare_data(self):
         self.df = self.df[self.df['Magnitude']>= self.M0].copy()
 
+        self.df = self.df[(self.df['Year']< 2016) & (self.df['Year']>= 2000)].copy()
+
         # Time
         self.df["Arrival_T"] = pd.to_datetime({
             "year": self.df["Year"],
@@ -133,9 +132,9 @@ class ETAS_Declustering:
     def calculate_bandwidth(self):
         """
         self.n_p is involved in the calculation of dj, but I set de degree value as the article
-        self.d and self.kernel_d are different variables
+        self.d and self.bandwidth_d are different variables
         """
-        self.dj = np.full(self.N, self.kernel_d)
+        self.bandwidth_d = np.full(self.N, 1)  # I must adjust dj
 
     def fit_conditional_intensity(self):
         """
@@ -144,18 +143,18 @@ class ETAS_Declustering:
         x0 = [self.v, self.A, self.c, self.alpha, self.p, self.d]
 
         bounds = [ 
-            (1 - 1e-4, 1000),  # v 
-            (10**(-5), 1- 10**(-10)),  # A 
-            (10**(-8), 5),  # c
-            (0.8, 1.5),  # alpha
-            (1+10**(-10), 2),  # p
-            (10 **(-10), 1)  # d
+            (0, 1000),  # v 
+            (0.01, 100),  # A 
+            (0 + 10**(-3), 10**5),  # c
+            (0.05, 1.5),  # alpha
+            (1+10**(-10), 10),  # p
+            (0 + 10 **(-3), 10**(-1))  # d
         ]
 
         def neg(x0):
             return -self.log_likelihood(x0)
 
-        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds, options={"maxiter":20, "fatol":1e-2})
+        result = minimize(neg, x0, method="Nelder-Mead", bounds=bounds, options={"maxiter":self.max_iter, "fatol":1e-2})
 
         self.v = result.x[0]
         self.A = result.x[1]
@@ -268,33 +267,31 @@ class ETAS_Declustering:
         for i in range(j):  # from i=1 to j-1 in the article, but range goes from i=0 to j-1
             pij = self.calculate_pij(i,j, lambda_j)
             pj += pij
-
+        
         return pj
 
-    def calculate_mu_estim(self, x, y, p):
-        temp = 0
+    def calculate_mu_estim(self, x, y):
+
+        Z = np.zeros_like(x, dtype=float)
 
         for j in range(self.N):
             delta_x = x - self.X[j]
             delta_y = y - self.Y[j]
+            rho_j = self.rho_list[j]
+            dj = self.bandwidth_d[j]
 
-            kdj = (2 * np.pi * self.kernel_d)**(-1) * np.exp(-(delta_x**2 + delta_y**2) / (2 * self.kernel_d**2))
-            temp += (1-p) * kdj
+            kdj = (2 * np.pi * dj)**(-1) * np.exp(-(delta_x**2 + delta_y**2) / (2 * dj**2))
+            Z += (1-rho_j) * kdj
 
-        return temp / self.T_total
+        return Z / self.T_total
 
     def calculate_difference(self):
         return np.max(np.abs(self.u_xy_new - self.u_xy))
 
     def evaluate_u_over_grid(self, X, Y):
-        p = self.p
-        Z = self.calculate_mu_estim(X, Y, p)
+        Z = self.calculate_mu_estim(X, Y)
         return Z
     
     def save_results(self):
         self.convergence_df.to_csv("Convergence_table.csv", index=False)
         
-
-if __name__ =='__main__':
-    earthquakes = "Earthquakes.csv"
-    obj = ETAS_Declustering(earthquakes)

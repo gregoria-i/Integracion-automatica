@@ -41,14 +41,14 @@ def filter_with_polygon(polygon, earthquakes_file):
 
 def prepare_grid(gdf, filtered_earthquakes):
     xmin = -106
-    xmax = -96
-    ymin = 15
-    ymax = 20
+    xmax = -94
+    ymin = 13
+    ymax = 22
 
     area = box(xmin, ymin, xmax, ymax)  # a smaller grid
     gdf = gdf.clip(area)
 
-    X, Y = np.meshgrid(np.linspace(xmin, xmax, 256), np.linspace(ymin, ymax, 256))
+    X, Y = np.meshgrid(np.linspace(xmin, xmax, 64), np.linspace(ymin, ymax, 64))
     obj = ETAS_Declustering(filtered_earthquakes)
     Z = obj.evaluate_u_over_grid(X, Y)
     return X, Y, Z, gdf
@@ -56,7 +56,7 @@ def prepare_grid(gdf, filtered_earthquakes):
 def show_grid_results(gdf, X, Y, Z):
     levels = np.linspace(Z.min(), Z.max())
     fig, ax = plt.subplots()
-    plt.contour(X, Y, Z, levels=levels, cmap='inferno')
+    plt.contourf(X, Y, Z, levels=levels, cmap='viridis')
     plt.colorbar()
     plt.grid()
     plt.title("Background intensity")
